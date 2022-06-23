@@ -33,13 +33,13 @@ if __name__ == "__main__":
     input_fpath = argv[1]
     assert os.path.exists(input_fpath)
 
-    fname = os.path.basename(input_fpath)
-    output_path = os.path.join(OUTPUT, fname)
+    fname, ext = os.path.splitext(os.path.basename(input_fpath))
+    output_path = os.path.join(OUTPUT, fname+'.mp3')
 
     out = ffmpeg.\
         input(input_fpath).\
         filter("loudnorm", i=-14, tp=-0.1).\
-        output(output_path, ar=44100, audio_bitrate='320k').\
+        output(output_path, ar=44100, format='mp3', audio_bitrate='256k').\
         run(overwrite_output=True)
 
     print(output_path)
