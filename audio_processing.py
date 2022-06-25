@@ -1,10 +1,10 @@
 import re
-import tempfile
-
 import ffmpeg
 from sys import argv
 import os
 from decimal import *
+
+from utils import get_temp_dir
 
 getcontext().prec = 2
 
@@ -34,7 +34,7 @@ def loudnorm(input_fpath):
     assert os.path.exists(input_fpath)
 
     fname, ext = os.path.splitext(os.path.basename(input_fpath))
-    output_path = os.path.join(tempfile.gettempdir(), f'{fname}_out.mp3')
+    output_path = os.path.join(get_temp_dir(), f'{fname}_out.mp3')
 
     out = ffmpeg. \
         input(input_fpath). \
