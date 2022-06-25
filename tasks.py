@@ -1,5 +1,5 @@
 import os
-from utils import get_temp_dir
+import tempfile
 from urllib.request import urlretrieve
 from audio_processing import loudnorm
 import logging
@@ -16,7 +16,7 @@ logger = logging.getLogger()
 @app.task
 def make_it_loud(audio_url, fname):
     logger.debug(f'audio_url: {audio_url}')
-    fpath = os.path.join(get_temp_dir(), fname)
+    fpath = os.path.join(tempfile.gettempdir(), fname)
     urlretrieve(audio_url, fpath)
     processed_fpath = loudnorm(fpath)
     os.remove(fpath)
