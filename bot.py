@@ -5,6 +5,8 @@ import settings
 from telebot.async_telebot import AsyncTeleBot
 import telebot
 import logging
+
+from s3 import download
 from tasks import make_it_loud
 
 logger = telebot.logger
@@ -37,7 +39,8 @@ async def process_audio(message):
         while not result.ready():
             await asyncio.sleep(delay)
             delay = min(delay * 1.2, 1)
-        output_fpath = result.get()
+        processed_s3_key = result.get()
+        output_fpath = download(processed_s3_key)
 
         with open(output_fpath, 'rb') as fileobj:
             await bot.send_audio(
