@@ -1,13 +1,18 @@
 import urllib
 import boto3
-from settings import CLOUDCUBE_URL
+from settings import CLOUDCUBE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 import os
 import tempfile
 
 BUCKET = urllib.parse.urlparse(CLOUDCUBE_URL).netloc.split('.')[0]
 CUBE = CLOUDCUBE_URL.split('/')[-1]
 
-s3 = boto3.client("s3")
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+)
 
 
 def get_key(fname):

@@ -6,6 +6,8 @@ from sys import argv
 import os
 from decimal import *
 
+import settings
+
 getcontext().prec = 2
 
 
@@ -38,7 +40,7 @@ def loudnorm(input_fpath):
 
     out = ffmpeg. \
         input(input_fpath). \
-        filter("loudnorm", i=-14, tp=-0.1). \
+        filter("loudnorm", i=settings.TARGET_LOUDNESS, tp=-0.1). \
         output(output_path, ar=44100, format='mp3', audio_bitrate='256k'). \
         run(overwrite_output=True)
 
