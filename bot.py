@@ -45,6 +45,7 @@ async def process_audio(message):
                 reply_to_message_id=message.id,
                 audio=(os.path.basename(output_fpath), fileobj)
             )
+        os.remove(output_fpath)
         # f"""Received audio file
         # name: {message.audio.file_name}
         # size: {message.audio.file_size/1024/1024} MB
