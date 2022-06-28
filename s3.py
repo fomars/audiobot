@@ -1,11 +1,13 @@
 import urllib
+from urllib.parse import urlparse, urljoin
+
 import boto3
 from settings import CLOUDCUBE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 import os
 import tempfile
 
-BUCKET = urllib.parse.urlparse(CLOUDCUBE_URL).netloc.split('.')[0]
-CUBE = CLOUDCUBE_URL.split('/')[-1]
+BUCKET = urlparse(CLOUDCUBE_URL).netloc.split('.')[0]
+BASE_URL, CUBE = CLOUDCUBE_URL.rsplit('/', 1)
 
 
 s3 = boto3.client(
@@ -15,12 +17,16 @@ s3 = boto3.client(
 )
 
 
-def get_key(fname):
-    return f'{CUBE}/audio_output/{fname}'
+def get_key(fname, public=False):
+    return f'{CUBE}/public/audio_output/{fname}' if public else f'{CUBE}/audio_output/{fname}'
 
 
-def upload(fpath):
-    key = get_key(os.path.basename(fpath))
+def get_link_from_key(key):
+    return urljoin(BASE_URL, key)
+
+
+def upload(fpath, public=False):
+    key = get_key(os.path.basename(fpath), public)
     s3.upload_file(
         Filename=fpath,
         Bucket=BUCKET,

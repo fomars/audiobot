@@ -28,20 +28,25 @@ def get_max_vol(file_path: str):
     return Decimal(re.match(r'.+max_volume:\s(.+?)\s', max_vol_str).groups()[0])
 
 
-def get_codec_name(probe: dict) -> str:
-    return probe['streams'][0]['codec_name']
+def get_bitrate(filename):
+    probe = ffmpeg.probe(filename)
+    try:
+        return int(probe['streams'][0]['bit_rate'])
+    except (IndexError, KeyError):
+        return 128000
 
 
-def loudnorm(input_fpath):
-    assert os.path.exists(input_fpath)
+def loudnorm(filename):
+    assert os.path.exists(filename)
 
-    fname, ext = os.path.splitext(os.path.basename(input_fpath))
+    fname, ext = os.path.splitext(os.path.basename(filename))
     output_path = os.path.join(tempfile.gettempdir(), f'{fname}_out.mp3')
+    bitrate = min(get_bitrate(filename), 256000)
 
     out = ffmpeg. \
-        input(input_fpath). \
+        input(filename). \
         filter("loudnorm", i=settings.TARGET_LOUDNESS, tp=-0.1). \
-        output(output_path, ar=44100, format='mp3', audio_bitrate='256k'). \
+        output(output_path, ar=44100, format='mp3', audio_bitrate=bitrate). \
         run(overwrite_output=True)
 
     return output_path

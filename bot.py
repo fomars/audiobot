@@ -1,13 +1,16 @@
 import asyncio
 import os.path
 
+import youtube_dl
+from youtube_dl import DownloadError
+
 import settings
 from telebot.async_telebot import AsyncTeleBot
 import telebot
 import logging
 
-from s3 import download
-from tasks import make_it_loud
+from s3 import download, get_link_from_key
+from tasks import make_it_loud, process_streaming_audio
 
 logger = telebot.logger
 if settings.DEBUG:
@@ -38,7 +41,7 @@ async def process_audio(message):
         delay = 0.1
         while not result.ready():
             await asyncio.sleep(delay)
-            delay = min(delay * 1.2, 1)
+            delay = min(delay * 1.2, 2)
         processed_s3_key = result.get()
         output_fpath = download(processed_s3_key)
 
@@ -55,6 +58,34 @@ async def process_audio(message):
         # mime_type: {message.audio.mime_type}
         # file_id: {message.audio.file_id}
         # file_unique_id: {message.audio.file_unique_id}"""
+
+
+@bot.message_handler(func=lambda message: message.entities)
+async def process_link(message):
+    if len(message.entities) > 1:
+        await bot.reply_to(message, 'Send only one URL')
+    else:
+        entity = message.entities[0]
+        if entity.type != 'url':
+            await bot.reply_to(message, 'Send a valid URL')
+        else:
+            url = message.text[entity.offset:entity.offset+entity.length]
+            try:
+                with youtube_dl.YoutubeDL() as ydl:
+                    info = ydl.extract_info(url, download=False)
+                    title = info.get('title', 'untitled')
+                await bot.reply_to(message, f"Audio is being processed\nDuration: {info.get('duration')}")
+
+                result = process_streaming_audio.delay(url, title)
+                delay = 0.1
+                while not result.ready():
+                    await asyncio.sleep(delay)
+                    delay = min(delay * 1.2, 2)
+                processed_s3_key = result.get()
+
+                await bot.reply_to(message, get_link_from_key(processed_s3_key))
+            except DownloadError:
+                await bot.reply_to(message, 'Media not found')
 
 
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
