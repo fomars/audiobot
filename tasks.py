@@ -41,13 +41,15 @@ OPTIONS = {
 
 @app.task
 def process_streaming_audio(url, title):
-    unique_name = str(uuid.uuid4())[-10:]
-    options = dict(OPTIONS, outtmpl=f'{unique_name}.%(ext)s')
-    filename = f"{unique_name}.{options['ext']}"
-    with youtube_dl.YoutubeDL(options) as dl:
-        dl.download([url])
-    processed_fpath = loudnorm(filename)
-    os.remove(filename)
-    processed_s3_key = upload(processed_fpath, public=True)
-    os.remove(processed_fpath)
+    # unique_name = str(uuid.uuid4())[-10:]
+    with tempfile.TemporaryDirectory() as temp_dir:
+        options = dict(OPTIONS, outtmpl=f'{temp_dir}/%(id)s.%(ext)s')
+        with youtube_dl.YoutubeDL(options) as dl:
+            dl.download([url])
+        downloaded_file = os.path.join(
+            temp_dir, os.listdir(temp_dir)[0]
+        )
+        processed_file = loudnorm(downloaded_file)
+    processed_s3_key = upload(processed_file, public=True)
+    os.remove(processed_file)
     return processed_s3_key

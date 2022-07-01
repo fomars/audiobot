@@ -22,8 +22,10 @@ bot = AsyncTeleBot(settings.TOKEN)
 @bot.message_handler(commands=['help', 'start'])
 async def send_welcome(message):
     await bot.reply_to(message, """\
-Hi there, I am EchoBot.
-I am here to echo your kind words back to you. Just say anything nice and I'll say the exact same thing to you!\
+Hi there, I am here to make your audio loud! 
+I can make your vlog / podcast / mixtape evenly loud throughout its duration.
+I make the overall loudness to match -14 dB LUFS according to the ITU 1770 standard.
+Just send me your audio file to see how it works!
 """)
 
 
@@ -52,12 +54,6 @@ async def process_audio(message):
                 audio=(os.path.basename(output_fpath), fileobj)
             )
         os.remove(output_fpath)
-        # f"""Received audio file
-        # name: {message.audio.file_name}
-        # size: {message.audio.file_size/1024/1024} MB
-        # mime_type: {message.audio.mime_type}
-        # file_id: {message.audio.file_id}
-        # file_unique_id: {message.audio.file_unique_id}"""
 
 
 @bot.message_handler(func=lambda message: message.entities)

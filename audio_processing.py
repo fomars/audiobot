@@ -36,15 +36,15 @@ def get_bitrate(filename):
         return 128000
 
 
-def loudnorm(filename):
-    assert os.path.exists(filename)
+def loudnorm(file_path):
+    assert os.path.exists(file_path)
 
-    fname, ext = os.path.splitext(os.path.basename(filename))
+    fname, ext = os.path.splitext(os.path.basename(file_path))
     output_path = os.path.join(tempfile.gettempdir(), f'{fname}_out.mp3')
-    bitrate = min(get_bitrate(filename), 256000)
+    bitrate = min(get_bitrate(file_path), 256000)
 
     out = ffmpeg. \
-        input(filename). \
+        input(file_path). \
         filter("loudnorm", i=settings.TARGET_LOUDNESS, tp=-0.1). \
         output(output_path, ar=44100, format='mp3', audio_bitrate=bitrate). \
         run(overwrite_output=True)
