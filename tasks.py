@@ -1,6 +1,5 @@
 import os
 import tempfile
-import uuid
 from urllib.request import urlretrieve
 
 import youtube_dl
@@ -41,7 +40,6 @@ OPTIONS = {
 
 @app.task
 def process_streaming_audio(url, title):
-    # unique_name = str(uuid.uuid4())[-10:]
     with tempfile.TemporaryDirectory() as temp_dir:
         options = dict(OPTIONS, outtmpl=f'{temp_dir}/%(id)s.%(ext)s')
         with youtube_dl.YoutubeDL(options) as dl:
