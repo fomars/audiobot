@@ -6,7 +6,7 @@ from sys import argv
 import os
 from decimal import *
 
-import settings
+from app import settings
 
 getcontext().prec = 2
 

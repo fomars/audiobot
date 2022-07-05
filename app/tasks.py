@@ -4,14 +4,18 @@ from urllib.request import urlretrieve
 
 import youtube_dl
 
-from audio_processing import loudnorm
+from app.audio_processing import loudnorm
+from app.s3 import upload
+from app.settings import BROKER_URL
 import logging
 import celery
-from s3 import upload
 
-app = celery.Celery('AudioWorker')
-app.conf.update(BROKER_URL=os.environ['REDIS_URL'],
-                CELERY_RESULT_BACKEND=os.environ['REDIS_URL'])
+app = celery.Celery(
+    'AudioWorker',
+    backend=BROKER_URL,
+    broker=BROKER_URL,
+    include=['app', 'app.tasks']
+)
 
 
 logger = logging.getLogger()

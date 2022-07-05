@@ -1,8 +1,7 @@
-import urllib
 from urllib.parse import urlparse, urljoin
 
 import boto3
-from settings import CLOUDCUBE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+from app.settings import CLOUDCUBE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 import os
 import tempfile
 
