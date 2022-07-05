@@ -1,9 +1,9 @@
 from urllib.parse import urlparse, urljoin
-
 import boto3
-from app.settings import CLOUDCUBE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 import os
 import tempfile
+
+from app.settings import CLOUDCUBE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 
 BUCKET = urlparse(CLOUDCUBE_URL).netloc.split('.')[0]
 BASE_URL, CUBE = CLOUDCUBE_URL.rsplit('/', 1)

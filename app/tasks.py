@@ -4,11 +4,12 @@ from urllib.request import urlretrieve
 
 import youtube_dl
 
+import celery
+import logging
+
 from app.audio_processing import loudnorm
 from app.s3 import upload
 from app.settings import BROKER_URL
-import logging
-import celery
 
 app = celery.Celery(
     'AudioWorker',

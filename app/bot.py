@@ -1,16 +1,15 @@
 import asyncio
 import os.path
-
 import youtube_dl
 from youtube_dl import DownloadError
-
-import settings
 from telebot.async_telebot import AsyncTeleBot
 import telebot
 import logging
 
-from s3 import download, get_link_from_key
-from tasks import make_it_loud, process_streaming_audio
+from app import settings
+from app.s3 import download, get_link_from_key
+from app.tasks import make_it_loud, process_streaming_audio
+
 
 logger = telebot.logger
 if settings.DEBUG:
