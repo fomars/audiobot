@@ -1,15 +1,49 @@
 version: '3.7'
 
 services:
-  telegram-bot-api:
-    platform: linux/x86_64
-    image: aiogram/telegram-bot-api:latest
-    environment:
-      TELEGRAM_API_ID: "${TELEGRAM_API_ID}"
-      TELEGRAM_API_HASH: "${TELEGRAM_API_HASH}"
-      TELEGRAM_LOCAL: 1
-    volumes:
-      - ./mount/telegram-bot-api:/var/lib/telegram-bot-api
-    ports:
-      - 8081:8081
-    restart: always
+  bot:
+    container_name: bot
+    build:
+      context: .
+      dockerfile: compose/bot_app/Dockerfile
+#    links:
+#      - redis
+#    depends_on:
+#      - redis
+    env_file:
+      - ./.env
+#    volumes:
+#      - ./mount/bot:/app
+
+#  redis:
+#    container_name: redis
+#    image: redis:7.0
+#    hostname: redis
+#
+#  worker:
+#    build:
+#      context: ./app
+#    hostname: worker
+#    entrypoint: celery
+#    command: -A tasks worker --loglevel=DEBUG
+#    volumes:
+#      - ./api:/app
+#    links:
+#      - redis
+#    depends_on:
+#      - redis
+#
+#  telegram-bot-api:
+#    container_name: telegram-bot-api
+#    hostname: telegram-bot-api
+#    platform: linux/x86_64
+#    image: aiogram/telegram-bot-api:latest
+#    environment:
+#      TELEGRAM_API_ID: "${TELEGRAM_API_ID}"
+#      TELEGRAM_API_HASH: "${TELEGRAM_API_HASH}"
+#      TELEGRAM_LOCAL: 1
+#    volumes:
+#      - ./mount/telegram-bot-api:/var/lib/telegram-bot-api
+#    ports:
+#      - "8081:8081"
+#    restart: always
