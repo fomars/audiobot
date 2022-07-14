@@ -6,32 +6,35 @@ services:
     build:
       context: .
       dockerfile: compose/bot_app/Dockerfile
-#    links:
-#      - redis
-#    depends_on:
-#      - redis
+    links:
+      - redis
+    depends_on:
+      - redis
     env_file:
       - ./.env
-#    volumes:
-#      - ./mount/bot:/app
+    volumes:
+      - ./mount/output:/app/output
 
-#  redis:
-#    container_name: redis
-#    image: redis:7.0
-#    hostname: redis
-#
-#  worker:
-#    build:
-#      context: ./app
-#    hostname: worker
-#    entrypoint: celery
-#    command: -A tasks worker --loglevel=DEBUG
-#    volumes:
-#      - ./api:/app
-#    links:
-#      - redis
-#    depends_on:
-#      - redis
+  redis:
+    container_name: redis
+    image: redis:7.0
+    hostname: redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: compose/bot_app/Dockerfile
+    hostname: worker
+    entrypoint: celery
+    command: -A app.tasks worker --loglevel=DEBUG
+    volumes:
+      - ./mount/output:/app/output
+    links:
+      - redis
+    depends_on:
+      - redis
+    env_file:
+      - ./.env
 #
 #  telegram-bot-api:
 #    container_name: telegram-bot-api

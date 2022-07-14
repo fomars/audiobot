@@ -1,6 +1,7 @@
 import os
 
 DEBUG = bool(os.getenv('DEBUG'))
+OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'app/output')
 
 # telegram
 TOKEN = os.getenv('API_TOKEN')

@@ -7,7 +7,6 @@ import telebot
 import logging
 
 from app import settings
-from app.s3 import download, get_link_from_key
 from app.tasks import make_it_loud, process_streaming_audio
 
 
@@ -43,8 +42,7 @@ async def process_audio(message):
         while not result.ready():
             await asyncio.sleep(delay)
             delay = min(delay * 1.2, 2)
-        processed_s3_key = result.get()
-        output_fpath = download(processed_s3_key)
+        output_fpath = result.get()
 
         with open(output_fpath, 'rb') as fileobj:
             await bot.send_audio(
@@ -76,9 +74,13 @@ async def process_link(message):
                 while not result.ready():
                     await asyncio.sleep(delay)
                     delay = min(delay * 1.2, 2)
-                processed_s3_key = result.get()
-
-                await bot.reply_to(message, get_link_from_key(processed_s3_key))
+                output_fpath = result.get()
+                with open(output_fpath, 'rb') as fileobj:
+                    await bot.send_audio(
+                        message.chat.id,
+                        reply_to_message_id=message.id,
+                        audio=(os.path.basename(output_fpath), fileobj)
+                    )
             except DownloadError:
                 await bot.reply_to(message, 'Media not found')
 

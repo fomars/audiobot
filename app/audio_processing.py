@@ -1,5 +1,4 @@
 import re
-import tempfile
 
 import ffmpeg
 from sys import argv
@@ -36,11 +35,11 @@ def get_bitrate(filename):
         return 128000
 
 
-def loudnorm(file_path):
+def loudnorm(file_path, output_dir):
     assert os.path.exists(file_path)
 
     fname, ext = os.path.splitext(os.path.basename(file_path))
-    output_path = os.path.join(tempfile.gettempdir(), f'{fname}_out.mp3')
+    output_path = os.path.join(output_dir, f'{fname}_out.mp3')
     bitrate = min(get_bitrate(file_path), 256000)
 
     out = ffmpeg. \

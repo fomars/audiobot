@@ -8,8 +8,7 @@ import celery
 import logging
 
 from app.audio_processing import loudnorm
-from app.s3 import upload
-from app.settings import BROKER_URL
+from app.settings import BROKER_URL, OUTPUT_DIR
 
 app = celery.Celery(
     'AudioWorker',
@@ -27,11 +26,9 @@ def make_it_loud(audio_url, fname):
     logger.debug(f'audio_url: {audio_url}')
     fpath = os.path.join(tempfile.gettempdir(), fname)
     urlretrieve(audio_url, fpath)
-    processed_fpath = loudnorm(fpath)
+    processed_fpath = loudnorm(fpath, OUTPUT_DIR)
     os.remove(fpath)
-    processed_s3_key = upload(processed_fpath)
-    os.remove(processed_fpath)
-    return processed_s3_key
+    return processed_fpath
 
 
 OPTIONS = {
@@ -44,7 +41,7 @@ OPTIONS = {
 
 
 @app.task
-def process_streaming_audio(url, title):
+def process_streaming_audio(url):
     with tempfile.TemporaryDirectory() as temp_dir:
         options = dict(OPTIONS, outtmpl=f'{temp_dir}/%(id)s.%(ext)s')
         with youtube_dl.YoutubeDL(options) as dl:
@@ -52,7 +49,5 @@ def process_streaming_audio(url, title):
         downloaded_file = os.path.join(
             temp_dir, os.listdir(temp_dir)[0]
         )
-        processed_file = loudnorm(downloaded_file)
-    processed_s3_key = upload(processed_file, public=True)
-    os.remove(processed_file)
-    return processed_s3_key
+        processed_file = loudnorm(downloaded_file, OUTPUT_DIR)
+    return processed_file
