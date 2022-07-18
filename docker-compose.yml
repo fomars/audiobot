@@ -52,7 +52,7 @@ services:
     image: aiogram/telegram-bot-api:latest
     environment:
       TELEGRAM_LOCAL: 1
-      TELEGRAM_VERBOSITY: 1
+      TELEGRAM_VERBOSITY: 2
     volumes:
       - ./mount/telegram-bot-api:/var/lib/telegram-bot-api
       - ./mount/output:/var/lib/telegram-bot-api/output

@@ -8,7 +8,7 @@ import telebot
 import logging
 
 from app import settings
-from app.files import UserUploaded
+from app.files import UserUploaded, send_file
 from app.tasks import make_it_loud, process_streaming_audio
 
 
@@ -44,18 +44,12 @@ async def process_audio(message):
         delay = 0.1
         while not result.ready():
             await asyncio.sleep(delay)
-            delay = min(delay * 1.2, 2)
+            delay = min(delay * 1.2, 3)
         output_fpath = result.get()
         file.remove()
 
         # TODO: send files as file uri: file:///
-        with open(output_fpath, 'rb') as fileobj:
-            await bot.send_audio(
-                message.chat.id,
-                reply_to_message_id=message.id,
-                audio=(os.path.basename(output_fpath), fileobj)
-            )
-        os.remove(output_fpath)
+        await send_file(output_fpath, bot, message)
 
 
 @bot.message_handler(func=lambda message: message.entities)

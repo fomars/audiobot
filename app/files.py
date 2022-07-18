@@ -3,7 +3,24 @@ import tempfile
 from abc import ABC, abstractmethod
 from urllib.request import urlretrieve
 
-from app.settings import LOCAL_API, API_TOKEN, TELEGRAM_API_URL,DEBUG
+from app import settings
+
+
+async def send_file(fpath, bot, message):
+    if settings.LOCAL_API:
+        file_uri = f'file:///{settings.API_WORKDIR}/output/{os.path.relpath(fpath, settings.OUTPUT_DIR)}'
+        await bot.send_audio(
+            message.chat.id,
+            reply_to_message_id=message.id,
+            audio=file_uri
+        )
+    else:
+        with open(fpath, 'rb') as fileobj:
+            await bot.send_audio(
+                message.chat.id,
+                reply_to_message_id=message.id,
+                audio=(os.path.basename(fpath), fileobj)
+            )
 
 
 class BotFile(ABC):
@@ -20,8 +37,8 @@ class BotFile(ABC):
 
 
 class UserUploaded(BotFile):
-    api_base_dir = '/var/lib/telegram-bot-api'
-    bot_base_dir = '/app/input'
+    api_workdir = settings.API_WORKDIR
+    bot_input_dir = settings.INPUT_DIR
 
     def __init__(self, file_info, file_name):
         self.file_name = file_name
@@ -31,11 +48,8 @@ class UserUploaded(BotFile):
     @property
     def path(self):
         if self._file_path is None:
-            if LOCAL_API:
-                if DEBUG:
-                    self._file_path = os.path.join('../mount', self.tg_file_path.strip('/'))
-                else:
-                    self._file_path = self.tg_file_path.replace(self.api_base_dir, self.bot_base_dir, 1)
+            if settings.LOCAL_API:
+                self._file_path = self.tg_file_path.replace(self.api_workdir, self.bot_input_dir, 1)
             else:
                 self._file_path = self.__download_user_file()
         return self._file_path
