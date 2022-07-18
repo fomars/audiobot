@@ -4,7 +4,9 @@ DEBUG = bool(os.getenv('DEBUG'))
 OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'app/output')
 
 # telegram
-TOKEN = os.getenv('API_TOKEN')
+API_TOKEN = os.getenv('API_TOKEN')
+TELEGRAM_API_URL = os.getenv('API_URL', 'https://api.telegram.org/bot')
+LOCAL_API = bool(os.getenv('API_URL'))
 
 # s3
 CLOUDCUBE_URL = os.environ['CLOUDCUBE_URL']

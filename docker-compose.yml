@@ -8,12 +8,18 @@ services:
       dockerfile: compose/bot_app/Dockerfile
     links:
       - redis
+      - telegram-bot-api
     depends_on:
       - redis
+      - telegram-bot-api
     env_file:
       - ./.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      API_URL: http://telegram-bot-api:8081/bot
     volumes:
       - ./mount/output:/app/output
+      - ./mount/telegram-bot-api:/app/input
 
   redis:
     container_name: redis
@@ -29,24 +35,29 @@ services:
     command: -A app.tasks worker --loglevel=DEBUG
     volumes:
       - ./mount/output:/app/output
+      - ./mount/telegram-bot-api:/app/input
     links:
       - redis
     depends_on:
       - redis
     env_file:
       - ./.env
-#
-#  telegram-bot-api:
-#    container_name: telegram-bot-api
-#    hostname: telegram-bot-api
-#    platform: linux/x86_64
-#    image: aiogram/telegram-bot-api:latest
-#    environment:
-#      TELEGRAM_API_ID: "${TELEGRAM_API_ID}"
-#      TELEGRAM_API_HASH: "${TELEGRAM_API_HASH}"
-#      TELEGRAM_LOCAL: 1
-#    volumes:
-#      - ./mount/telegram-bot-api:/var/lib/telegram-bot-api
-#    ports:
-#      - "8081:8081"
-#    restart: always
+    environment:
+      REDIS_URL: redis://redis:6379/0
+
+  telegram-bot-api:
+    container_name: telegram-bot-api
+    hostname: telegram-bot-api
+    platform: linux/x86_64
+    image: aiogram/telegram-bot-api:latest
+    environment:
+      TELEGRAM_LOCAL: 1
+      TELEGRAM_VERBOSITY: 1
+    volumes:
+      - ./mount/telegram-bot-api:/var/lib/telegram-bot-api
+      - ./mount/output:/var/lib/telegram-bot-api/output
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./.env
+    restart: always

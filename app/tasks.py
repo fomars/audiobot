@@ -8,6 +8,7 @@ import celery
 import logging
 
 from app.audio_processing import loudnorm
+from app.files import BotFile
 from app.settings import BROKER_URL, OUTPUT_DIR
 
 app = celery.Celery(
@@ -22,17 +23,13 @@ logger = logging.getLogger()
 
 
 @app.task
-def make_it_loud(audio_url, fname):
-    logger.debug(f'audio_url: {audio_url}')
-    fpath = os.path.join(tempfile.gettempdir(), fname)
-    urlretrieve(audio_url, fpath)
-    processed_fpath = loudnorm(fpath, OUTPUT_DIR)
-    os.remove(fpath)
+def make_it_loud(file_path: str):
+    processed_fpath = loudnorm(file_path, OUTPUT_DIR)
     return processed_fpath
 
 
 OPTIONS = {
-    'format': 'bestaudio/best',
+    'format': 'bestaudio',
     'extractaudio': True,  # only keep the audio
     'audioformat': "mp3",  # convert to mp3
     'ext': "mp3",
