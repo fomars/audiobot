@@ -1,6 +1,8 @@
 import asyncio
 import os.path
+
 import youtube_dl
+from telebot.asyncio_storage import StateRedisStorage
 from youtube_dl import DownloadError
 from telebot.async_telebot import AsyncTeleBot
 from telebot import asyncio_helper
@@ -16,8 +18,22 @@ logger = telebot.logger
 if settings.DEBUG:
     logger.setLevel(logging.DEBUG)
 
+state_storage = StateRedisStorage(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    db=1
+)
+
 asyncio_helper.API_URL = settings.TELEGRAM_API_URL + '{0}/{1}'
-bot = AsyncTeleBot(settings.API_TOKEN)
+bot = AsyncTeleBot(
+    settings.API_TOKEN,
+    state_storage=state_storage
+)
+
+
+@bot.message_handler(func=lambda message: message.from_user.is_bot)
+async def filter_bots(message):
+    pass
 
 
 @bot.message_handler(commands=['help', 'start'])
@@ -38,9 +54,10 @@ async def process_audio(message):
         await bot.reply_to(message, "Downloading file")
         file_info = await bot.get_file(message.audio.file_id)
         file = UserUploaded(file_info, message.audio.file_name)
-        await bot.reply_to(message, "Audio is being processed")
+        target_loudness = await bot.get_state(message.from_user.id, message.chat.id)
+        await bot.reply_to(message, f"Audio is being processed, target loudness: {target_loudness} LUFS")
 
-        result = make_it_loud.delay(file.path)
+        result = make_it_loud.delay(file.path, target_loudness)
         delay = 0.1
         while not result.ready():
             await asyncio.sleep(delay)
@@ -84,7 +101,17 @@ async def process_link(message):
                 await bot.reply_to(message, 'Media not found')
 
 
-# Handle all other messages with content_type 'text' (content_types defaults to ['text'])
 @bot.message_handler(func=lambda message: True)
-async def echo_message(message):
-    await bot.reply_to(message, message.text)
+async def set_loudness(message):
+    try:
+        loudness = int(message.text)
+        assert settings.MIN_LOUDNESS <= loudness <= settings.MAX_LOUDNESS
+    except (ValueError, AssertionError):
+        await bot.reply_to(
+            message,
+            f"Enter loudness between [{settings.MIN_LOUDNESS}, {settings.MAX_LOUDNESS}] LUFS, "
+            f"or just send an audio to render at default {settings.TARGET_LOUDNESS} LUFS"
+        )
+    else:
+        await bot.set_state(message.from_user.id, str(loudness), message.chat.id)
+        await bot.reply_to(message, f'Target loudness is set to {loudness} LUFS')

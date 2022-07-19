@@ -16,7 +16,10 @@ AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 
 # ffmpeg
-TARGET_LOUDNESS = int(os.getenv('TARGET_LOUDNESS', '-13'))
+TARGET_LOUDNESS = int(os.getenv('TARGET_LOUDNESS', '-14'))
+MAX_LOUDNESS = int(os.getenv('MAX_LOUDNESS', '-6'))
+MIN_LOUDNESS = int(os.getenv('MIN_LOUDNESS', '-28'))
 
 # celery
-BROKER_URL = os.environ['REDIS_URL']
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')

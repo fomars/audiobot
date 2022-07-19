@@ -15,7 +15,7 @@ services:
     env_file:
       - ./.env
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_HOST: redis
       API_URL: http://telegram-bot-api:8081/bot
     volumes:
       - ./mount/output:/app/output
@@ -43,7 +43,7 @@ services:
     env_file:
       - ./.env
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_HOST: redis
 
   telegram-bot-api:
     container_name: telegram-bot-api

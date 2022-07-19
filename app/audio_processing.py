@@ -1,11 +1,10 @@
 import re
+from typing import Union
 
 import ffmpeg
 from sys import argv
 import os
 from decimal import *
-
-from app import settings
 
 getcontext().prec = 2
 
@@ -35,7 +34,7 @@ def get_bitrate(filename):
         return 128000
 
 
-def loudnorm(file_path, output_dir):
+def loudnorm(file_path: str, output_dir: str, target_loudness: Union[int, str]):
     assert os.path.exists(file_path)
 
     fname, ext = os.path.splitext(os.path.basename(file_path))
@@ -44,7 +43,7 @@ def loudnorm(file_path, output_dir):
 
     out = ffmpeg. \
         input(file_path). \
-        filter("loudnorm", i=settings.TARGET_LOUDNESS, tp=-0.1). \
+        filter("loudnorm", i=target_loudness, tp=-0.1). \
         output(output_path, ar=44100, format='mp3', audio_bitrate=bitrate). \
         run(overwrite_output=True)
 

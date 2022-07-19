@@ -1,6 +1,7 @@
 import os
 import tempfile
-from urllib.request import urlretrieve
+from typing import Union
+from urllib.parse import urljoin
 
 import youtube_dl
 
@@ -8,13 +9,13 @@ import celery
 import logging
 
 from app.audio_processing import loudnorm
-from app.files import BotFile
-from app.settings import BROKER_URL, OUTPUT_DIR
+from app.settings import REDIS_HOST, REDIS_PORT, OUTPUT_DIR
 
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/"
 app = celery.Celery(
     'AudioWorker',
-    backend=BROKER_URL,
-    broker=BROKER_URL,
+    backend=urljoin(REDIS_URL, '/0'),
+    broker=REDIS_URL,
     include=['app', 'app.tasks']
 )
 
@@ -23,8 +24,8 @@ logger = logging.getLogger()
 
 
 @app.task
-def make_it_loud(file_path: str):
-    processed_fpath = loudnorm(file_path, OUTPUT_DIR)
+def make_it_loud(file_path: str, target_loudness: Union[int, str]):
+    processed_fpath = loudnorm(file_path, OUTPUT_DIR, target_loudness)
     return processed_fpath
 
 
@@ -46,5 +47,5 @@ def process_streaming_audio(url):
         downloaded_file = os.path.join(
             temp_dir, os.listdir(temp_dir)[0]
         )
-        processed_file = loudnorm(downloaded_file, OUTPUT_DIR)
+        processed_file = loudnorm(downloaded_file, OUTPUT_DIR, target_loudness=-13)
     return processed_file
