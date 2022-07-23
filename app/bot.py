@@ -21,7 +21,7 @@ if settings.DEBUG:
 state_storage = StateRedisStorage(
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
-    db=1
+    db=settings.STORAGE_DB
 )
 
 asyncio_helper.API_URL = settings.TELEGRAM_API_URL + '{0}/{1}'

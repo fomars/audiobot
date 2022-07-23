@@ -23,3 +23,6 @@ MIN_LOUDNESS = int(os.getenv('MIN_LOUDNESS', '-28'))
 # celery
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+BROKER_DB = 0
+BACKEND_DB = 1
+STORAGE_DB = 2

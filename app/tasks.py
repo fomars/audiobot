@@ -9,13 +9,15 @@ import celery
 import logging
 
 from app.audio_processing import loudnorm
-from app.settings import REDIS_HOST, REDIS_PORT, OUTPUT_DIR
+from app.settings import REDIS_HOST, REDIS_PORT, OUTPUT_DIR, BACKEND_DB, BROKER_DB
 
-REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/"
+BROCKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{BROKER_DB}"
+BACKEND_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{BACKEND_DB}"
+
 app = celery.Celery(
     'AudioWorker',
-    backend=urljoin(REDIS_URL, '/0'),
-    broker=REDIS_URL,
+    broker=BROCKER_URL,
+    backend=BACKEND_URL,
     include=['app', 'app.tasks']
 )
 
