@@ -54,7 +54,7 @@ async def process_audio(message):
         await bot.reply_to(message, "Downloading file")
         file_info = await bot.get_file(message.audio.file_id)
         file = UserUploaded(file_info, message.audio.file_name)
-        target_loudness = await bot.get_state(message.from_user.id, message.chat.id)
+        target_loudness = await bot.get_state(message.from_user.id, message.chat.id) or settings.DEFAULT_LOUDNESS
         await bot.reply_to(
             message,
             f"Audio is being processed, target loudness: {target_loudness} LUFS",
@@ -116,7 +116,7 @@ async def set_loudness(message):
             message,
             f"Enter loudness between [{settings.MIN_LOUDNESS}, {settings.MAX_LOUDNESS}]"
             " LUFS, or just send an audio to render at default"
-            f" {settings.TARGET_LOUDNESS} LUFS",
+            f" {settings.DEFAULT_LOUDNESS} LUFS",
         )
     else:
         await bot.set_state(message.from_user.id, str(loudness), message.chat.id)
