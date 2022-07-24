@@ -35,11 +35,12 @@ async def filter_bots(message):
 async def send_welcome(message):
     await bot.reply_to(
         message,
-        """\
+        f"""\
 Hi there, I am here to make your audio loud!
 I can make your vlog / podcast / mixtape evenly loud throughout its duration.
-I make the overall loudness to match -14 dB LUFS according to the ITU 1770 standard.
-Just send me your audio file to see how it works!
+I make the overall loudness to match -14 dB LUFS by default, \
+but you can set the target loudness between [{settings.MIN_LOUDNESS}, {settings.MAX_LOUDNESS}], just send me the number!
+Or simply send me your audio file and see how it works!
 """,
     )
 
