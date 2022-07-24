@@ -9,9 +9,11 @@ services:
     links:
       - redis
       - telegram-bot-api
+      - db
     depends_on:
       - redis
       - telegram-bot-api
+      - db
     env_file:
       - ./.env
     environment:
@@ -20,11 +22,13 @@ services:
     volumes:
       - ./mount/output:/app/output
       - ./mount/telegram-bot-api:/app/input
+    restart: always
 
   redis:
     container_name: redis
     image: redis:7.0
     hostname: redis
+    restart: always
 
   worker:
     build:
@@ -44,6 +48,7 @@ services:
       - ./.env
     environment:
       REDIS_HOST: redis
+    restart: always
 
   telegram-bot-api:
     container_name: telegram-bot-api
@@ -61,3 +66,13 @@ services:
     env_file:
       - ./.env
     restart: always
+
+  db:
+    image: postgres:13
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - "65432:5432"
+    volumes:
+      - ./mount/postgres:/var/lib/postgresql/data
