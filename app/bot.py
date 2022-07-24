@@ -39,7 +39,8 @@ async def send_welcome(message):
 Hi there, I am here to make your audio loud!
 I can make your vlog / podcast / mixtape evenly loud throughout its duration.
 I make the overall loudness to match -14 dB LUFS by default, \
-but you can set the target loudness between [{settings.MIN_LOUDNESS}, {settings.MAX_LOUDNESS}], just send me the number!
+but you can set the target loudness between [{settings.MIN_LOUDNESS}, {settings.MAX_LOUDNESS}], \
+just send me the number!
 Or simply send me your audio file and see how it works!
 """,
     )

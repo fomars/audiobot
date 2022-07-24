@@ -46,9 +46,7 @@ def loudnorm(file_path: str, output_dir: str, target_loudness: Union[int, str]):
 
     ffmpeg.input(file_path).filter(
         "loudnorm", i=target_loudness, tp=-0.1, lra=8.0
-    ).output(
-        output_path, ar=44100, format="mp3", audio_bitrate=bitrate
-    ).run(
+    ).output(output_path, ar=44100, format="mp3", audio_bitrate=bitrate).run(
         overwrite_output=True
     )
 
