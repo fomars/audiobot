@@ -6,10 +6,6 @@ services:
     build:
       context: .
       dockerfile: compose/bot_app/Dockerfile
-    links:
-      - redis
-      - telegram-bot-api
-      - db
     depends_on:
       - redis
       - telegram-bot-api
@@ -31,6 +27,7 @@ services:
     restart: always
 
   worker:
+    container_name: worker
     build:
       context: .
       dockerfile: compose/bot_app/Dockerfile
@@ -40,8 +37,6 @@ services:
     volumes:
       - ./mount/output:/app/output
       - ./mount/telegram-bot-api:/app/input
-    links:
-      - redis
     depends_on:
       - redis
     env_file:
@@ -68,6 +63,7 @@ services:
     restart: always
 
   db:
+    container_name: db
     image: postgres:13
     restart: always
     env_file:
@@ -76,3 +72,21 @@ services:
       - "65432:5432"
     volumes:
       - ./mount/postgres:/var/lib/postgresql/data
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    env_file:
+      - ./.env
+    environment:
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - ./mount/pgadmin:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT}:80"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 400M
