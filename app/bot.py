@@ -47,15 +47,25 @@ Or simply send me your audio file and see how it works!
     )
 
 
-@bot.message_handler(content_types=["audio"])
-async def process_audio(message):
-    if message.audio.file_size / 1024 / 1024 > 350:
-        await bot.reply_to(message, "File size limit exceeded")
+@bot.message_handler(content_types=["audio", "document"])
+async def handle_audio(message):
+    if message.audio:
+        audio = message.audio
+    elif re.fullmatch(settings.ACCEPTED_MIME_TYPES, message.document.mime_type):
+        audio = message.document
+    else:
+        return await bot.reply_to(message, "Unsupported file type.")
+
+    if audio.file_size / 1024 / 1024 > 350:
+        return await bot.reply_to(message, "File size limit exceeded (350M)")
     else:
         await bot.reply_to(message, "Downloading file")
-        file_info = await bot.get_file(message.audio.file_id)
-        file = UserUploaded(file_info, message.audio.file_name)
-        target_loudness = await bot.get_state(message.from_user.id, message.chat.id) or settings.DEFAULT_LOUDNESS
+        file_info = await bot.get_file(audio.file_id)
+        file = UserUploaded(file_info, audio.file_name)
+        target_loudness = (
+            await bot.get_state(message.from_user.id, message.chat.id)
+            or settings.DEFAULT_LOUDNESS
+        )
         await bot.reply_to(
             message,
             f"Audio is being processed, target loudness: {target_loudness} LUFS",
@@ -72,14 +82,6 @@ async def process_audio(message):
         await send_file(output_fpath, bot, message)
 
 
-@bot.message_handler(content_types=["document"])
-async def process_document(message):
-    document = message.document
-    if re.fullmatch(settings.ACCEPTED_MIME_TYPES, message.document.mime_type):
-        pass
-    mime_type = document.mime_type  # 'audio/x-wav'
-
-
 @bot.message_handler(func=lambda message: message.entities)
 async def process_link(message):
     if len(message.entities) > 1:
@@ -89,7 +91,7 @@ async def process_link(message):
         if entity.type != "url":
             await bot.reply_to(message, "Send a valid URL")
         else:
-            url = message.text[entity.offset: entity.offset + entity.length]
+            url = message.text[entity.offset : entity.offset + entity.length]  # noqa: E203
             try:
                 with youtube_dl.YoutubeDL() as ydl:
                     info = ydl.extract_info(url, download=False)
