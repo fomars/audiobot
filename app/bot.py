@@ -1,5 +1,6 @@
 import asyncio
 import os.path
+import re
 
 import youtube_dl
 from telebot.asyncio_storage import StateRedisStorage
@@ -69,6 +70,14 @@ async def process_audio(message):
         file.remove()
 
         await send_file(output_fpath, bot, message)
+
+
+@bot.message_handler(content_types=["document"])
+async def process_document(message):
+    document = message.document
+    if re.fullmatch(settings.ACCEPTED_MIME_TYPES, message.document.mime_type):
+        pass
+    mime_type = document.mime_type  # 'audio/x-wav'
 
 
 @bot.message_handler(func=lambda message: message.entities)
