@@ -6,50 +6,62 @@ services:
     build:
       context: .
       dockerfile: compose/bot_app/Dockerfile
-    links:
-      - redis
-      - telegram-bot-api
+    platform: linux/x86_64
     depends_on:
       - redis
       - telegram-bot-api
+      - db
     env_file:
       - ./.env
     environment:
       REDIS_HOST: redis
       API_URL: http://telegram-bot-api:8081/bot
+      DB_HOST: db
+      DB_PORT: 5432
     volumes:
       - ./mount/output:/app/output
       - ./mount/telegram-bot-api:/app/input
+    restart: always
 
   redis:
     container_name: redis
     image: redis:7.0
     hostname: redis
+    restart: always
+    volumes:
+      - ./mount/redis-data:/data/
+    env_file:
+      - ./.env
+    ports:
+      - "6379:6379"
 
   worker:
+    container_name: worker
+    hostname: worker
     build:
       context: .
       dockerfile: compose/bot_app/Dockerfile
-    hostname: worker
+    platform: linux/x86_64
     entrypoint: celery
     command: -A app.tasks worker --loglevel=DEBUG
     volumes:
       - ./mount/output:/app/output
       - ./mount/telegram-bot-api:/app/input
-    links:
-      - redis
     depends_on:
       - redis
     env_file:
       - ./.env
     environment:
       REDIS_HOST: redis
+      DB_HOST: db
+      DB_PORT: 5432
+    restart: always
 
   telegram-bot-api:
     container_name: telegram-bot-api
     hostname: telegram-bot-api
-    platform: linux/x86_64
     image: aiogram/telegram-bot-api:latest
+    platform: linux/x86_64
     environment:
       TELEGRAM_LOCAL: 1
       TELEGRAM_VERBOSITY: 2
@@ -61,3 +73,32 @@ services:
     env_file:
       - ./.env
     restart: always
+
+  db:
+    container_name: db
+    image: postgres:13
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - "65432:5432"
+    volumes:
+      - ./mount/postgres:/var/lib/postgresql/data
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    env_file:
+      - ./.env
+    environment:
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - ./mount/pgadmin:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT}:80"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 400M

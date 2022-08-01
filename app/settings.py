@@ -1,5 +1,7 @@
 import os
 
+from pydantic import BaseSettings
+
 DEBUG = bool(os.getenv("DEBUG"))
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "app/output")
 INPUT_DIR = os.getenv("INPUT_DIR", "app/input")
@@ -27,3 +29,18 @@ REDIS_PORT = os.getenv("REDIS_PORT", "6379")
 BROKER_DB = 0
 BACKEND_DB = 1
 STORAGE_DB = 2
+
+
+class DBSettings(BaseSettings):
+    db_user: str
+    db_password: str
+    db_host: str = "db"
+    db_port: str = "5432"
+    db_name: str = "audiobot"
+
+    @property
+    def connection_str(self) -> str:
+        return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"  # noqa: E501
+
+
+db_settings = DBSettings()
