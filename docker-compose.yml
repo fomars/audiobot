@@ -38,9 +38,6 @@ services:
   worker:
     container_name: worker
     hostname: worker
-    build:
-      context: .
-      dockerfile: compose/bot_app/Dockerfile
     platform: linux/x86_64
     entrypoint: celery
     command: -A app.tasks worker --loglevel=DEBUG
