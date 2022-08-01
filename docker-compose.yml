@@ -28,6 +28,8 @@ services:
     image: redis:7.0
     hostname: redis
     restart: always
+    volumes:
+      - ./mount/redis-data:/data/
 
   worker:
     container_name: worker
