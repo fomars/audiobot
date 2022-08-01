@@ -3,8 +3,7 @@
 include .env
 export
 
-VENV=.venv
-PYTHON=$(VENV)/bin/python3
+PYTHON=python3
 POSTGRES_DSN="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/postgres"
 
 build:
