@@ -12,7 +12,7 @@ COPY requirements.txt ./
 COPY ./app /app
 COPY ./main.py /
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip setuptools wheel && pip install --no-cache-dir -r requirements.txt
 
 FROM bot-base
 

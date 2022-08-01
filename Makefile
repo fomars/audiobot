@@ -5,6 +5,7 @@ export
 
 VENV=.venv
 PYTHON=$(VENV)/bin/python3
+POSTGRES_DSN="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/postgres"
 
 build:
 	docker-compose build --no-cache bot worker
@@ -29,3 +30,12 @@ deploy:
 	make build
 	make run
 	make migrate
+
+drop_db:
+	psql "$(POSTGRES_DSN)" -c "DROP DATABASE IF EXISTS ${DB_NAME};"
+
+create_db:
+	psql "$(POSTGRES_DSN)" \
+	-c "CREATE DATABASE ${DB_NAME};" \
+	-c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};" \
+	-c "\c ${DB_NAME};"

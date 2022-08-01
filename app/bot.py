@@ -12,6 +12,7 @@ import logging
 
 from app import settings
 from app.files import UserUploaded, send_file
+from app.middleware import AccountingMiddleware
 from app.tasks import make_it_loud, process_streaming_audio
 
 
@@ -25,6 +26,7 @@ state_storage = StateRedisStorage(
 
 asyncio_helper.API_URL = settings.TELEGRAM_API_URL + "{0}/{1}"
 bot = AsyncTeleBot(settings.API_TOKEN, state_storage=state_storage)
+bot.setup_middleware(AccountingMiddleware())
 
 
 @bot.message_handler(func=lambda message: message.from_user.is_bot)

@@ -6,6 +6,7 @@ services:
     build:
       context: .
       dockerfile: compose/bot_app/Dockerfile
+    platform: linux/x86_64
     depends_on:
       - redis
       - telegram-bot-api
@@ -30,10 +31,11 @@ services:
 
   worker:
     container_name: worker
+    hostname: worker
     build:
       context: .
       dockerfile: compose/bot_app/Dockerfile
-    hostname: worker
+    platform: linux/x86_64
     entrypoint: celery
     command: -A app.tasks worker --loglevel=DEBUG
     volumes:
@@ -52,8 +54,8 @@ services:
   telegram-bot-api:
     container_name: telegram-bot-api
     hostname: telegram-bot-api
-    platform: linux/x86_64
     image: aiogram/telegram-bot-api:latest
+    platform: linux/x86_64
     environment:
       TELEGRAM_LOCAL: 1
       TELEGRAM_VERBOSITY: 2
