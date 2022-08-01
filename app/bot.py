@@ -65,8 +65,7 @@ async def handle_audio(message):
         file_info = await bot.get_file(audio.file_id)
         file = UserUploaded(file_info, audio.file_name)
         target_loudness = (
-            await bot.get_state(message.from_user.id, message.chat.id)
-            or settings.DEFAULT_LOUDNESS
+            await bot.get_state(message.from_user.id, message.chat.id) or settings.DEFAULT_LOUDNESS
         )
         await bot.reply_to(
             message,
@@ -81,7 +80,12 @@ async def handle_audio(message):
         output_fpath = result.get()
         file.remove()
 
-        await send_file(output_fpath, bot, message)
+        try:
+            duration = audio.duration
+        except AttributeError:
+            duration = None
+
+        await send_file(output_fpath, bot, message, audio.file_name, duration)
 
 
 @bot.message_handler(func=lambda message: message.entities)

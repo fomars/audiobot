@@ -34,13 +34,13 @@ STORAGE_DB = 2
 class DBSettings(BaseSettings):
     db_user: str
     db_password: str
-    db_host: str = 'db'
-    db_port: str = '5432'
-    db_name: str = 'audiobot'
+    db_host: str = "db"
+    db_port: str = "5432"
+    db_name: str = "audiobot"
 
     @property
     def connection_str(self) -> str:
-        return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"  # noqa: E501
 
 
 db_settings = DBSettings()

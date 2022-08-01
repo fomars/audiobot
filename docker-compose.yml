@@ -30,6 +30,10 @@ services:
     restart: always
     volumes:
       - ./mount/redis-data:/data/
+    env_file:
+      - ./.env
+    ports:
+      - "6379:6379"
 
   worker:
     container_name: worker

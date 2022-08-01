@@ -17,7 +17,7 @@ stop:
 	docker-compose down
 
 lint:
-	black --preview .
+	black --line-length=100 --preview --extend-exclude=versions/ .
 	flake8 .
 
 makemigrations: ## Create alembic migration

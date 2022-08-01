@@ -10,7 +10,7 @@ from alembic import context
 
 from app.settings import db_settings
 from app.db import Base
-from app.models import user
+from app.models import user  # noqa: F401
 
 
 # this is the Alembic Config object, which provides
@@ -33,7 +33,7 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-config.set_main_option("sqlalchemy.url",  db_settings.connection_str)
+config.set_main_option("sqlalchemy.url", db_settings.connection_str)
 
 
 def run_migrations_offline() -> None:

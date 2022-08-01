@@ -6,13 +6,17 @@ from urllib.request import urlretrieve
 from app import settings
 
 
-async def send_file(fpath, bot, message):
+async def send_file(fpath, bot, message, filename, duration):
     if settings.LOCAL_API:
         file_uri = (
             f"file:///{settings.API_WORKDIR}/output/{os.path.relpath(fpath, settings.OUTPUT_DIR)}"
         )
         await bot.send_audio(
-            message.chat.id, reply_to_message_id=message.id, audio=file_uri
+            message.chat.id,
+            reply_to_message_id=message.id,
+            audio=file_uri,
+            title=filename,
+            duration=duration,
         )
     else:
         with open(fpath, "rb") as fileobj:
@@ -49,9 +53,7 @@ class UserUploaded(BotFile):
     def path(self):
         if self._file_path is None:
             if settings.LOCAL_API:
-                self._file_path = self.tg_file_path.replace(
-                    self.api_workdir, self.bot_input_dir, 1
-                )
+                self._file_path = self.tg_file_path.replace(self.api_workdir, self.bot_input_dir, 1)
             else:
                 self._file_path = self.__download_user_file()
         return self._file_path
