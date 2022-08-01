@@ -3,7 +3,8 @@
 include .env
 export
 
-PYTHON=python3
+VENV=.venv
+PYTHON=$(VENV)/bin/python3
 POSTGRES_DSN="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/postgres"
 
 build:
@@ -28,7 +29,7 @@ migrate:  ## Apply latest alembic migrations
 deploy:
 	make build
 	make run
-	make migrate
+	docker exec -it bot python3 alembic upgrade head
 
 drop_db:
 	psql "$(POSTGRES_DSN)" -c "DROP DATABASE IF EXISTS ${DB_NAME};"

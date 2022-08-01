@@ -10,7 +10,7 @@ RUN     apt-get -yqq update && \
 
 COPY requirements.txt ./
 COPY ./app /app
-COPY ./main.py /
+COPY ./main.py ./alembic.ini /
 
 RUN pip install --upgrade pip setuptools wheel && pip install --no-cache-dir -r requirements.txt
 
