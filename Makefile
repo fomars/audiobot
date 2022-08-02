@@ -29,7 +29,7 @@ migrate:  ## Apply latest alembic migrations
 deploy:
 	make build
 	make run
-	docker exec -it bot python3 alembic upgrade head
+	docker exec -it bot python3 -m alembic upgrade head
 
 drop_db:
 	psql "$(POSTGRES_DSN)" -c "DROP DATABASE IF EXISTS ${DB_NAME};"
