@@ -6,6 +6,7 @@ services:
     build:
       context: .
       dockerfile: compose/bot_app/Dockerfile
+    image: audiobot
     platform: linux/x86_64
     depends_on:
       - redis
@@ -38,9 +39,7 @@ services:
   worker:
     container_name: worker
     hostname: worker
-    build:
-      context: .
-      dockerfile: compose/bot_app/Dockerfile
+    image: audiobot
     platform: linux/x86_64
     entrypoint: celery
     command: -A app.tasks worker --loglevel=DEBUG
@@ -48,6 +47,7 @@ services:
       - ./mount/output:/app/output
       - ./mount/telegram-bot-api:/app/input
     depends_on:
+      - bot
       - redis
     env_file:
       - ./.env
