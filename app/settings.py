@@ -36,11 +36,11 @@ class DBSettings(BaseSettings):
     postgres_password: str
     postgres_host: str = "db"
     postgres_port: str = "5432"
-    postgres_name: str = "audiobot"
+    postgres_db: str = "audiobot"
 
     @property
     def connection_str(self) -> str:
-        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_name}"  # noqa: E501
+        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"  # noqa: E501
 
 
 db_settings = DBSettings()

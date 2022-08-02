@@ -3,8 +3,7 @@
 include .env
 export
 
-VENV=.venv
-PYTHON=$(VENV)/bin/python3
+PYTHON=python3
 POSTGRES_DSN="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/postgres"
 
 build:
@@ -32,10 +31,10 @@ deploy:
 	docker exec -it bot python3 -m alembic upgrade head
 
 drop_db:
-	psql "$(POSTGRES_DSN)" -c "DROP DATABASE IF EXISTS ${DB_NAME};"
+	psql "$(POSTGRES_DSN)" -c "DROP DATABASE IF EXISTS ${POSTGRES_DB};"
 
 create_db:
 	psql "$(POSTGRES_DSN)" \
-	-c "CREATE DATABASE ${DB_NAME};" \
-	-c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};" \
-	-c "\c ${DB_NAME};"
+	-c "CREATE DATABASE ${POSTGRES_DB};" \
+	-c "GRANT ALL PRIVILEGES ON DATABASE ${POSTGRES_DB} TO ${DB_USER};" \
+	-c "\c ${POSTGRES_DB};"
