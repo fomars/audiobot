@@ -10,7 +10,14 @@ build:
 	docker-compose build bot
 
 run:
-	docker-compose up -d
+	docker-compose up -d --timeout 300
+
+run_new_worker:
+	docker run -d --name new_worker --platform linux/x86_64 \
+-v /Users/arseny.fomchenko/PycharmProjects/audiobot/mount/output:/app/output \
+-v /Users/arseny.fomchenko/PycharmProjects/audiobot/mount/telegram-bot-api:/app/input --env-file .env \
+-e REDIS_PORT=6379 -e REDIS_HOST=redis -e API_URL=http://telegram-bot-api:8081/bot --network audiobot_default \
+audiobot celery -A app.tasks worker --loglevel=DEBUG
 
 stop:
 	docker-compose down
