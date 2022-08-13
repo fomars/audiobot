@@ -1,6 +1,4 @@
-from app.bot import bot
+from app.handlers import bot
 
 if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(bot.infinity_polling())
+    bot.infinity_polling(allowed_updates=["message"])

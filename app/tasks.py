@@ -8,7 +8,8 @@ import celery
 import logging
 
 from app.audio_processing import loudnorm
-from app.settings import REDIS_HOST, REDIS_PORT, OUTPUT_DIR, BACKEND_DB, BROKER_DB
+from app.files import send_file
+from app.settings import REDIS_HOST, REDIS_PORT, OUTPUT_DIR, BACKEND_DB, BROKER_DB, INPUT_DIR, API_WORKDIR
 
 BROCKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{BROKER_DB}"
 BACKEND_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{BACKEND_DB}"
@@ -17,14 +18,15 @@ app = celery.Celery(
     "AudioWorker", broker=BROCKER_URL, backend=BACKEND_URL, include=["app", "app.tasks"]
 )
 
-
 logger = logging.getLogger()
 
 
 @app.task
-def make_it_loud(file_path: str, target_loudness: Union[int, str]):
-    processed_fpath = loudnorm(file_path, OUTPUT_DIR, target_loudness)
-    return processed_fpath
+def make_it_loud(api_fpath: str, target_loudness: Union[int, str], duration, chat_id, msg_id, og_filename):
+    fpath = api_fpath.replace(API_WORKDIR, INPUT_DIR)
+    processed_fpath = loudnorm(fpath, OUTPUT_DIR, target_loudness)
+    send_file(processed_fpath, chat_id, msg_id, og_filename, duration)
+    os.remove(fpath)
 
 
 OPTIONS = {

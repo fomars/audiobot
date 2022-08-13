@@ -16,6 +16,7 @@ services:
       - ./.env
     environment:
       REDIS_HOST: redis
+      REDIS_PORT: 6379
       API_URL: http://telegram-bot-api:8081/bot
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
@@ -34,7 +35,7 @@ services:
     env_file:
       - ./.env
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
 
   worker:
     container_name: worker
@@ -52,7 +53,9 @@ services:
     env_file:
       - ./.env
     environment:
+      API_URL: http://telegram-bot-api:8081/bot
       REDIS_HOST: redis
+      REDIS_PORT: 6379
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
     restart: always

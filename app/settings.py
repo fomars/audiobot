@@ -5,6 +5,7 @@ from pydantic import BaseSettings
 DEBUG = bool(os.getenv("DEBUG"))
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "app/output")
 INPUT_DIR = os.getenv("INPUT_DIR", "app/input")
+APP_THREADS = int(os.getenv("APP_THREADS", "8"))
 
 # telegram
 API_TOKEN = os.getenv("API_TOKEN")
@@ -40,7 +41,7 @@ class DBSettings(BaseSettings):
 
     @property
     def connection_str(self) -> str:
-        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"  # noqa: E501
+        return f"postgresql+psycopg2://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"  # noqa: E501
 
 
 db_settings = DBSettings()

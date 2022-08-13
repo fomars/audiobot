@@ -7,7 +7,7 @@ PYTHON=python3
 POSTGRES_DSN="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/postgres"
 
 build:
-	docker-compose build --no-cache bot worker
+	docker-compose build bot
 
 run:
 	docker-compose up -d

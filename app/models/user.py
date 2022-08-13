@@ -1,14 +1,14 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, BigInteger, String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import insert
 
-from app.db import Base, utcnow, get_session
+from app.db import Base, utcnow, Session
 
 
 class User(Base):
     __tablename__ = "users"
     __mapper_args__ = {"eager_defaults": True}
 
-    tg_id = Column(Integer, primary_key=True, autoincrement=False)
+    tg_id = Column(BigInteger, primary_key=True, autoincrement=False)
     tg_username = Column(String(255))
     first_name = Column(String(255), nullable=False)
     is_bot = Column(Boolean, nullable=False)
@@ -21,8 +21,8 @@ class User(Base):
 
 class UserDAL:
     @staticmethod
-    async def upsert_user(tg_id: int, first_name: str, is_bot: bool, tg_username: str = None):
-        async with get_session() as session:
+    def upsert_user(tg_id: int, first_name: str, is_bot: bool, tg_username: str = None):
+        with Session() as session:
             user = User(tg_username=tg_username, first_name=first_name, is_bot=is_bot)
             user.tg_ig = tg_id
 
@@ -33,6 +33,7 @@ class UserDAL:
                     tg_username=tg_username,
                     first_name=first_name,
                     is_bot=is_bot,
+                    last_message_at=utcnow(),
                 )
                 .on_conflict_do_update(
                     index_elements=["tg_id"],
@@ -45,5 +46,5 @@ class UserDAL:
                     },
                 )
             )
-            await session.execute(query)
-            await session.commit()
+            session.execute(query)
+            session.commit()
