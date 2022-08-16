@@ -33,6 +33,11 @@ BACKEND_DB = 1
 STORAGE_DB = 2
 
 
+class AppSettings(BaseSettings):
+    audio_send_timeout: int = 60
+    video_send_timeout: int = 300
+
+
 class DBSettings(BaseSettings):
     postgres_user: str
     postgres_password: str
@@ -46,3 +51,4 @@ class DBSettings(BaseSettings):
 
 
 db_settings = DBSettings()
+app_settings = AppSettings()

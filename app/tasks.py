@@ -7,7 +7,7 @@ import youtube_dl
 import celery
 import logging
 
-from app.audio_processing import loudnorm, loudnorm_video
+from app.audio_processing import loudnorm, VideoProcessor
 from app.files import send_audio, send_video
 from app.settings import (
     REDIS_HOST,
@@ -31,7 +31,12 @@ logger = logging.getLogger()
 
 @app.task
 def make_it_loud(
-    api_fpath: str, target_loudness: Union[int, str], duration, chat_id, msg_id, og_filename
+    api_fpath: str,
+    target_loudness: Union[int, str],
+    duration,
+    chat_id,
+    msg_id,
+    og_filename,
 ):
     fpath = api_fpath.replace(API_WORKDIR, INPUT_DIR)
     processed_fpath = loudnorm(fpath, OUTPUT_DIR, target_loudness)
@@ -43,16 +48,13 @@ def make_it_loud(
 def make_video_loud(
     api_fpath: str,
     target_loudness: Union[int, str],
-    duration,
-    chat_id,
-    msg_id,
-    og_filename,
-    width,
-    height,
+    chat_id: int,
+    msg_id: int,
 ):
     fpath = api_fpath.replace(API_WORKDIR, INPUT_DIR)
-    processed_fpath = loudnorm_video(fpath, OUTPUT_DIR, target_loudness)
-    send_video(processed_fpath, chat_id, msg_id, og_filename, duration, width, height)
+    vp = VideoProcessor(fpath)
+    processed_fpath = vp.loudnorm(OUTPUT_DIR, target_loudness)
+    send_video(processed_fpath, chat_id, msg_id, vp.duration, vp.width, vp.height)
     os.remove(fpath)
 
 

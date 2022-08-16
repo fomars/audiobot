@@ -1,5 +1,6 @@
 import os
 import os.path
+import re
 import time
 
 import youtube_dl
@@ -36,7 +37,6 @@ Or simply send me your audio file and see how it works!
 @bot.message_handler(content_types=["audio"])
 def handle_audio(message):
     audio = message.audio
-
     if audio.file_size / 1024 / 1024 > 350:
         return bot.reply_to(message, "File size limit exceeded (350M)")
     else:
@@ -64,37 +64,34 @@ def handle_audio(message):
         )
 
 
-@bot.message_handler(content_types=["video"])
+@bot.message_handler(content_types=["video", "document"])
 def handle_video(message):
-    video = message.video
+    if message.video:
+        video = message.video
+    elif re.fullmatch(settings.VIDEO_MIME_TYPES, message.document.mime_type):
+        video = message.document
+    else:
+        return bot.reply_to(message, "Unsupported media type")
+
     if video.file_size / 1024 / 1024 > 1200:
         return bot.reply_to(message, "File size limit exceeded (1200M)")
-    else:
-        bot.reply_to(message, "Downloading file")
-        file_info = bot.get_file(video.file_id)
-        logger.info(f"file from {message.from_user}\ninfo: {file_info}")
-        target_loudness = (
-            bot.get_state(message.from_user.id, message.chat.id) or settings.DEFAULT_LOUDNESS
-        )
-        bot.reply_to(
-            message,
-            f"Video is being processed, target loudness: {target_loudness} LUFS\nCaution: Preview"
-            " size might be distorted/cropped. Expand fullscreen or download for proper view.",
-        )
-        try:
-            duration = video.duration
-        except AttributeError:
-            duration = None
-        make_video_loud.delay(
-            file_info.file_path,
-            target_loudness,
-            duration,
-            message.chat.id,
-            message.id,
-            video.file_name,
-            video.width,
-            video.height,
-        )
+
+    bot.reply_to(message, "Downloading file")
+    file_info = bot.get_file(video.file_id)
+    logger.info(f"file from {message.from_user}\ninfo: {file_info}")
+    target_loudness = (
+        bot.get_state(message.from_user.id, message.chat.id) or settings.DEFAULT_LOUDNESS
+    )
+    bot.reply_to(
+        message,
+        f"Video is being processed, target loudness: {target_loudness} LUFS.",
+    )
+    make_video_loud.delay(
+        file_info.file_path,
+        target_loudness,
+        message.chat.id,
+        message.id,
+    )
 
 
 @bot.message_handler(func=lambda message: message.entities)
@@ -152,7 +149,6 @@ def set_loudness(message):
 @bot.message_handler(
     content_types=[
         "animation",
-        "document",
         "photo",
         "sticker",
         "video_note",

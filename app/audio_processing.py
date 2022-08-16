@@ -31,20 +31,11 @@ def get_max_vol(file_path: str):
 
 def get_audio_bitrate(filename):
     probe = ffmpeg.probe(filename)
-    try:
-        for stream in probe["streams"]:
-            if stream["codec_type"] == "audio":
-                return int(stream["bit_rate"])
-    finally:
+    for stream in probe["streams"]:
+        if stream.get("codec_type") == "audio":
+            return int(stream.get("bit_rate", 192000))
+    else:
         return 192000
-
-
-def get_resolution(filename) -> (int, int):
-    probe = ffmpeg.probe(filename)
-    try:
-        return probe["streams"][0]["width"], probe["streams"][0]["height"]
-    except KeyError:
-        return None, None
 
 
 def loudnorm(file_path: str, output_dir: str, target_loudness: Union[int, str]):
@@ -61,20 +52,48 @@ def loudnorm(file_path: str, output_dir: str, target_loudness: Union[int, str]):
     return output_path
 
 
-def loudnorm_video(file_path: str, output_dir: str, target_loudness: Union[int, str]):
-    assert os.path.exists(file_path)
+class VideoProcessor:
+    def __init__(self, filepath):
+        assert os.path.exists(filepath)
+        self.file_path = filepath
+        self.probe = ffmpeg.probe(filepath)
+        self.duration = self.probe["format"]["duration"]
+        self.width, self.height = self.__get_resolution()
 
-    fname, ext = os.path.splitext(os.path.basename(file_path))
-    output_path = os.path.join(output_dir, f"{fname}_out.mp4")
-    bitrate = min(get_audio_bitrate(file_path), 192000)
+        for stream in self.probe["streams"]:
+            if stream.get("codec_type") == "audio":
+                self.audio_bitrate = min(int(stream.get("bit_rate", 192000)), 192000)
+            elif stream.get("codec_type") == "video":
+                self.video_bitrate = stream.get("bit_rate")
 
-    inp = ffmpeg.input(file_path)
-    audio_norm = inp.audio.filter("loudnorm", i=target_loudness, tp=-0.1)
-    ffmpeg.output(
-        inp.video, audio_norm, output_path, format="mp4", ar=44100, audio_bitrate=bitrate
-    ).run(overwrite_output=True)
+    def __get_resolution(self) -> (int, int):
+        for stream in self.probe["streams"]:
+            if stream.get("codec_type") == "video":
+                if (
+                    stream.get("side_data_list")
+                    and stream["side_data_list"][0].get("rotation", 0) % 180
+                ):
+                    return stream.get("height"), stream.get("width")
+                else:
+                    return stream.get("width"), stream.get("height")
 
-    return output_path
+    def loudnorm(self, output_dir: str, target_loudness: Union[int, str]):
+        fname, ext = os.path.splitext(os.path.basename(self.file_path))
+        output_path = os.path.join(output_dir, f"{fname}_out.mp4")
+
+        inp = ffmpeg.input(self.file_path)
+        audio_norm = inp.audio.filter("loudnorm", i=target_loudness, tp=-0.1)
+        ffmpeg.output(
+            inp.video,
+            audio_norm,
+            output_path,
+            format="mp4",
+            ar=44100,
+            audio_bitrate=self.audio_bitrate,
+            video_bitrate=self.video_bitrate,
+        ).run(overwrite_output=True)
+
+        return output_path
 
 
 if __name__ == "__main__":
