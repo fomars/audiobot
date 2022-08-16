@@ -23,7 +23,7 @@ DEFAULT_LOUDNESS = int(os.getenv("TARGET_LOUDNESS", "-14"))
 MAX_LOUDNESS = int(os.getenv("MAX_LOUDNESS", "-6"))
 MIN_LOUDNESS = int(os.getenv("MIN_LOUDNESS", "-28"))
 AUDIO_MIME_TYPES = r"^audio/[a-zA-Z0-9-_]+|application/ogg$"
-VIDEO_MIME_TYPES = r""
+VIDEO_MIME_TYPES = r"^video/[a-zA-Z0-9-_]+$"
 
 # celery
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")

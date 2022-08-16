@@ -8,7 +8,7 @@ import logging
 
 from app import settings
 from app.bot import bot
-from app.tasks import make_it_loud, process_streaming_audio
+from app.tasks import make_it_loud, make_video_loud, process_streaming_audio
 
 logger = logging.getLogger()
 
@@ -54,7 +54,47 @@ def handle_audio(message):
             duration = audio.duration
         except AttributeError:
             duration = None
-        make_it_loud.delay(file_info.file_path, target_loudness, duration, message.chat.id, message.id, audio.file_name)
+        make_it_loud.delay(
+            file_info.file_path,
+            target_loudness,
+            duration,
+            message.chat.id,
+            message.id,
+            audio.file_name,
+        )
+
+
+@bot.message_handler(content_types=["video"])
+def handle_video(message):
+    video = message.video
+    if video.file_size / 1024 / 1024 > 1200:
+        return bot.reply_to(message, "File size limit exceeded (1200M)")
+    else:
+        bot.reply_to(message, "Downloading file")
+        file_info = bot.get_file(video.file_id)
+        logger.info(f"file from {message.from_user}\ninfo: {file_info}")
+        target_loudness = (
+            bot.get_state(message.from_user.id, message.chat.id) or settings.DEFAULT_LOUDNESS
+        )
+        bot.reply_to(
+            message,
+            f"Video is being processed, target loudness: {target_loudness} LUFS\nCaution: Preview"
+            " size might be distorted/cropped. Expand fullscreen or download for proper view.",
+        )
+        try:
+            duration = video.duration
+        except AttributeError:
+            duration = None
+        make_video_loud.delay(
+            file_info.file_path,
+            target_loudness,
+            duration,
+            message.chat.id,
+            message.id,
+            video.file_name,
+            video.width,
+            video.height,
+        )
 
 
 @bot.message_handler(func=lambda message: message.entities)
@@ -109,10 +149,20 @@ def set_loudness(message):
         bot.reply_to(message, f"Target loudness is set to {loudness} LUFS")
 
 
-@bot.message_handler(content_types=['animation', 'document', 'photo', 'sticker', 'video_note',
-                                    'voice', 'contact','dice', 'poll', 'venue', 'location'])
+@bot.message_handler(
+    content_types=[
+        "animation",
+        "document",
+        "photo",
+        "sticker",
+        "video_note",
+        "voice",
+        "contact",
+        "dice",
+        "poll",
+        "venue",
+        "location",
+    ]
+)
 def undefined(message):
-    bot.reply_to(
-        message,
-        f"Send media file."
-    )
+    bot.reply_to(message, "Send media file.")

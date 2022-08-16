@@ -26,7 +26,7 @@ class AccountingMiddleware(BaseMiddleware):
                 0,
                 file_name=message.document.file_name,
                 mime_type=message.document.mime_type,
-                file_size=message.document.file_size
+                file_size=message.document.file_size,
             )
             message.content_type = "audio"
 
