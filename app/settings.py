@@ -22,7 +22,8 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 DEFAULT_LOUDNESS = int(os.getenv("TARGET_LOUDNESS", "-14"))
 MAX_LOUDNESS = int(os.getenv("MAX_LOUDNESS", "-6"))
 MIN_LOUDNESS = int(os.getenv("MIN_LOUDNESS", "-28"))
-ACCEPTED_MIME_TYPES = r"^audio/[a-zA-Z0-9-_]+|application/ogg$"
+AUDIO_MIME_TYPES = r"^audio/[a-zA-Z0-9-_]+|application/ogg$"
+VIDEO_MIME_TYPES = r""
 
 # celery
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")

@@ -1,6 +1,5 @@
 import os
 import os.path
-import re
 import time
 
 import youtube_dl
@@ -34,14 +33,9 @@ Or simply send me your audio file and see how it works!
     )
 
 
-@bot.message_handler(content_types=["audio", "document"])
+@bot.message_handler(content_types=["audio"])
 def handle_audio(message):
-    if message.audio:
-        audio = message.audio
-    elif re.fullmatch(settings.ACCEPTED_MIME_TYPES, message.document.mime_type):
-        audio = message.document
-    else:
-        return bot.reply_to(message, "Unsupported file type.")
+    audio = message.audio
 
     if audio.file_size / 1024 / 1024 > 350:
         return bot.reply_to(message, "File size limit exceeded (350M)")
@@ -113,3 +107,12 @@ def set_loudness(message):
     else:
         bot.set_state(message.from_user.id, str(loudness), message.chat.id)
         bot.reply_to(message, f"Target loudness is set to {loudness} LUFS")
+
+
+@bot.message_handler(content_types=['animation', 'document', 'photo', 'sticker', 'video_note',
+                                    'voice', 'contact','dice', 'poll', 'venue', 'location'])
+def undefined(message):
+    bot.reply_to(
+        message,
+        f"Send media file."
+    )
