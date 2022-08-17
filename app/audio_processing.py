@@ -52,6 +52,21 @@ def loudnorm(file_path: str, output_dir: str, target_loudness: Union[int, str]):
     return output_path
 
 
+class AudioProcessor:
+    @staticmethod
+    def default_loudnorm(ffmpeg_inp, loudness):
+        return ffmpeg_inp.audio.filter("loudnorm", i=loudness, tp=-0.7)
+
+    @staticmethod
+    def speech_enhance(ffmpeg_inp):
+        return (
+            ffmpeg_inp.audio.filter("highpass", f=150)
+            .filter("asubcut", cutoff=80)
+            .filter("lowpass", f=12500)
+            .filter("loudnorm", i=-18, tp=-0.7)
+        )
+
+
 class VideoProcessor:
     def __init__(self, filepath):
         assert os.path.exists(filepath)
@@ -82,7 +97,7 @@ class VideoProcessor:
         output_path = os.path.join(output_dir, f"{fname}_out.mp4")
 
         inp = ffmpeg.input(self.file_path)
-        audio_norm = inp.audio.filter("loudnorm", i=target_loudness, tp=-0.1)
+        audio_norm = inp.audio.filter("loudnorm", i=target_loudness, tp=-0.7)
         ffmpeg.output(
             inp.video,
             audio_norm,
@@ -105,7 +120,7 @@ if __name__ == "__main__":
 
     out = (
         ffmpeg.input(input_fpath)
-        .filter("loudnorm", i=-14, tp=-0.1)
+        .filter("loudnorm", i=-14, tp=-0.7)
         .output(output_path, ar=44100, format="mp3", audio_bitrate="256k")
         .run(overwrite_output=True)
     )
