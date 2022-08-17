@@ -5,7 +5,6 @@ from pydantic import BaseSettings
 DEBUG = bool(os.getenv("DEBUG"))
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "app/output")
 INPUT_DIR = os.getenv("INPUT_DIR", "app/input")
-APP_THREADS = int(os.getenv("APP_THREADS", "8"))
 
 # telegram
 API_TOKEN = os.getenv("API_TOKEN")
@@ -18,18 +17,26 @@ CLOUDCUBE_URL = os.getenv("CLOUDCUBE_URL")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-# ffmpeg
-DEFAULT_LOUDNESS = int(os.getenv("TARGET_LOUDNESS", "-14"))
-MAX_LOUDNESS = int(os.getenv("MAX_LOUDNESS", "-6"))
-MIN_LOUDNESS = int(os.getenv("MIN_LOUDNESS", "-28"))
-ACCEPTED_MIME_TYPES = r"^audio/[a-zA-Z0-9-_]+|application/ogg$"
-
 # celery
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
 BROKER_DB = 0
 BACKEND_DB = 1
 STORAGE_DB = 2
+
+
+class AppSettings(BaseSettings):
+    app_threads: int = 8
+    audio_send_timeout: int = 60
+    video_send_timeout: int = 300
+    read_timeout: int = 300
+    audio_size_limit: int = 350
+    video_size_limit: int = 1200
+    default_loudness: int = -14
+    max_loudness: int = -6
+    min_loudness: int = -28
+    audio_mime_types: str = r"^audio/[a-zA-Z0-9-_]+|application/ogg$"
+    video_mime_types: str = r"^video/[a-zA-Z0-9-_]+$"
 
 
 class DBSettings(BaseSettings):
@@ -45,3 +52,4 @@ class DBSettings(BaseSettings):
 
 
 db_settings = DBSettings()
+app_settings = AppSettings()

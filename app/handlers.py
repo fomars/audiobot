@@ -7,9 +7,9 @@ import youtube_dl
 from youtube_dl import DownloadError
 import logging
 
-from app import settings
+from app.settings import app_settings
 from app.bot import bot
-from app.tasks import make_it_loud, process_streaming_audio
+from app.tasks import make_it_loud, make_video_loud, process_streaming_audio
 
 logger = logging.getLogger()
 
@@ -27,30 +27,24 @@ def send_welcome(message):
 Hi there, I am here to make your audio loud!
 I can make your vlog / podcast / mixtape evenly loud throughout its duration.
 I make the overall loudness to match -14 dB LUFS by default, \
-but you can set the target loudness between [{settings.MIN_LOUDNESS}, {settings.MAX_LOUDNESS}], \
+but you can set the target loudness between [{app_settings.min_loudness}, {app_settings.max_loudness}], \
 just send me the number!
-Or simply send me your audio file and see how it works!
+Or simply send me your audio/video file and see how it works!
 """,
     )
 
 
-@bot.message_handler(content_types=["audio", "document"])
+@bot.message_handler(content_types=["audio"])
 def handle_audio(message):
-    if message.audio:
-        audio = message.audio
-    elif re.fullmatch(settings.ACCEPTED_MIME_TYPES, message.document.mime_type):
-        audio = message.document
-    else:
-        return bot.reply_to(message, "Unsupported file type.")
-
-    if audio.file_size / 1024 / 1024 > 350:
+    audio = message.audio
+    if audio.file_size / 1024 / 1024 > app_settings.audio_size_limit:
         return bot.reply_to(message, "File size limit exceeded (350M)")
     else:
         bot.reply_to(message, "Downloading file")
         file_info = bot.get_file(audio.file_id)
         logger.info(f"file from {message.from_user}\ninfo: {file_info}")
         target_loudness = (
-            bot.get_state(message.from_user.id, message.chat.id) or settings.DEFAULT_LOUDNESS
+            bot.get_state(message.from_user.id, message.chat.id) or app_settings.default_loudness
         )
         bot.reply_to(
             message,
@@ -60,7 +54,44 @@ def handle_audio(message):
             duration = audio.duration
         except AttributeError:
             duration = None
-        make_it_loud.delay(file_info.file_path, target_loudness, duration, message.chat.id, message.id, audio.file_name)
+        make_it_loud.delay(
+            file_info.file_path,
+            target_loudness,
+            duration,
+            message.chat.id,
+            message.id,
+            audio.file_name,
+        )
+
+
+@bot.message_handler(content_types=["video", "document"])
+def handle_video(message):
+    if message.video:
+        video = message.video
+    elif re.fullmatch(app_settings.video_mime_types, message.document.mime_type):
+        video = message.document
+    else:
+        return bot.reply_to(message, "Unsupported media type")
+
+    if video.file_size / 1024 / 1024 > app_settings.video_size_limit:
+        return bot.reply_to(message, "File size limit exceeded (1200M)")
+
+    bot.reply_to(message, "Downloading file")
+    file_info = bot.get_file(video.file_id)
+    logger.info(f"file from {message.from_user}\ninfo: {file_info}")
+    target_loudness = (
+        bot.get_state(message.from_user.id, message.chat.id) or app_settings.default_loudness
+    )
+    bot.reply_to(
+        message,
+        f"Video is being processed, target loudness: {target_loudness} LUFS.",
+    )
+    make_video_loud.delay(
+        file_info.file_path,
+        target_loudness,
+        message.chat.id,
+        message.id,
+    )
 
 
 @bot.message_handler(func=lambda message: message.entities)
@@ -102,14 +133,32 @@ def process_link(message):
 def set_loudness(message):
     try:
         loudness = int(message.text)
-        assert settings.MIN_LOUDNESS <= loudness <= settings.MAX_LOUDNESS
+        assert app_settings.min_loudness <= loudness <= app_settings.max_loudness
     except (ValueError, AssertionError):
         bot.reply_to(
             message,
-            f"Enter loudness between [{settings.MIN_LOUDNESS}, {settings.MAX_LOUDNESS}]"
+            f"Enter loudness between [{app_settings.min_loudness}, {app_settings.max_loudness}]"
             " LUFS, or just send an audio to render at default"
-            f" {settings.DEFAULT_LOUDNESS} LUFS",
+            f" {app_settings.default_loudness} LUFS",
         )
     else:
         bot.set_state(message.from_user.id, str(loudness), message.chat.id)
         bot.reply_to(message, f"Target loudness is set to {loudness} LUFS")
+
+
+@bot.message_handler(
+    content_types=[
+        "animation",
+        "photo",
+        "sticker",
+        "video_note",
+        "voice",
+        "contact",
+        "dice",
+        "poll",
+        "venue",
+        "location",
+    ]
+)
+def undefined(message):
+    bot.reply_to(message, "Send media file.")

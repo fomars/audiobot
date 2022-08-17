@@ -112,3 +112,7 @@ samples/
 
 # idea
 .idea/
+
+# test samples
+*.mp4
+*.mp3
