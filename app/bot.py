@@ -13,12 +13,13 @@ state_storage = StateRedisStorage(
 )
 
 apihelper.API_URL = settings.TELEGRAM_API_URL + "{0}/{1}"
-apihelper.READ_TIMEOUT = 300
+apihelper.READ_TIMEOUT = settings.app_settings.read_timeout
+
 
 bot = TeleBot(
     settings.API_TOKEN,
     state_storage=state_storage,
-    num_threads=settings.APP_THREADS,
+    num_threads=settings.app_settings.app_threads,
     use_class_middlewares=True,
 )
 bot.setup_middleware(AccountingMiddleware())

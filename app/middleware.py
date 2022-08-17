@@ -3,7 +3,7 @@ import re
 from telebot.handler_backends import BaseMiddleware
 from telebot.types import Audio
 
-from app import settings
+from app.settings import app_settings
 from app.models.user import UserDAL
 
 
@@ -19,7 +19,9 @@ class AccountingMiddleware(BaseMiddleware):
             message.from_user.is_bot,
             message.from_user.username,
         )
-        if message.document and re.fullmatch(settings.AUDIO_MIME_TYPES, message.document.mime_type):
+        if message.document and re.fullmatch(
+            app_settings.audio_mime_types, message.document.mime_type
+        ):
             message.audio = Audio(
                 message.document.file_id,
                 message.document.file_unique_id,
