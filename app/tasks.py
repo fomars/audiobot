@@ -1,6 +1,5 @@
 import os
 import tempfile
-from typing import Union
 
 import youtube_dl
 
@@ -22,38 +21,40 @@ from app.settings import (
 BROCKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{BROKER_DB}"
 BACKEND_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{BACKEND_DB}"
 
-app = celery.Celery(
+celery_app = celery.Celery(
     "AudioWorker", broker=BROCKER_URL, backend=BACKEND_URL, include=["app", "app.tasks"]
 )
 
 logger = logging.getLogger()
 
 
-@app.task
-def make_it_loud(
+@celery_app.task
+def process_audio(
     api_fpath: str,
-    target_loudness: Union[int, str],
+    algorithm: str,
+    kwargs,
     duration,
     chat_id,
     msg_id,
     og_filename,
 ):
     fpath = api_fpath.replace(API_WORKDIR, INPUT_DIR)
-    processed_fpath = loudnorm(fpath, OUTPUT_DIR, target_loudness)
+    processed_fpath = loudnorm(fpath, OUTPUT_DIR, algorithm, kwargs)
     send_audio(processed_fpath, chat_id, msg_id, og_filename, duration)
     os.remove(fpath)
 
 
-@app.task
-def make_video_loud(
+@celery_app.task
+def process_video(
     api_fpath: str,
-    target_loudness: Union[int, str],
+    algorithm: str,
+    kwargs: dict,
     chat_id: int,
     msg_id: int,
 ):
     fpath = api_fpath.replace(API_WORKDIR, INPUT_DIR)
     vp = VideoProcessor(fpath)
-    processed_fpath = vp.loudnorm(OUTPUT_DIR, target_loudness)
+    processed_fpath = vp.loudnorm(OUTPUT_DIR, algorithm, kwargs)
     send_video(processed_fpath, chat_id, msg_id, vp.duration, vp.width, vp.height)
     os.remove(fpath)
 
@@ -67,7 +68,7 @@ OPTIONS = {
 }
 
 
-@app.task
+@celery_app.task
 def process_streaming_audio(url):
     with tempfile.TemporaryDirectory() as temp_dir:
         options = dict(OPTIONS, outtmpl=f"{temp_dir}/%(id)s.%(ext)s")

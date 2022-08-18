@@ -32,9 +32,12 @@ class AppSettings(BaseSettings):
     read_timeout: int = 300
     audio_size_limit: int = 350
     video_size_limit: int = 1200
+    max_loudness: int = -7
+    min_loudness: int = -24
     default_loudness: int = -14
-    max_loudness: int = -6
-    min_loudness: int = -28
+    min_low_cut: int = 50
+    max_low_cut: int = 150
+    default_low_cut: int = 65
     audio_mime_types: str = r"^audio/[a-zA-Z0-9-_]+|application/ogg$"
     video_mime_types: str = r"^video/[a-zA-Z0-9-_]+$"
 

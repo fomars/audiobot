@@ -1,11 +1,15 @@
 import re
-from typing import Union
-
-import ffmpeg
-from sys import argv
 import os
+import ffmpeg
+import logging
+
+from sys import argv
 from decimal import getcontext, Decimal
-from settings import app_settings
+
+from app.commands import MainCommands
+from app.settings import app_settings
+
+logger = logging.getLogger()
 
 getcontext().prec = 2
 
@@ -39,27 +43,30 @@ def get_audio_bitrate(filename):
         return 192000
 
 
-def loudnorm(file_path: str, output_dir: str, target_loudness: Union[int, str]):
+def loudnorm(file_path: str, output_dir: str, algorithm, kwargs):
     assert os.path.exists(file_path)
 
     fname, ext = os.path.splitext(os.path.basename(file_path))
     output_path = os.path.join(output_dir, f"{fname}_out.mp3")
     bitrate = min(get_audio_bitrate(file_path), 256000)
 
-    ffmpeg.input(file_path).filter("loudnorm", i=target_loudness, tp=-0.1).output(
+    inp = ffmpeg.input(file_path)
+    prepared_cmd = algorithms[algorithm](inp, **kwargs).output(
         output_path, ar=44100, format="mp3", audio_bitrate=bitrate
-    ).run(overwrite_output=True)
+    )
 
+    logger.info(f"ffmpeg cmd:\n{' '.join(prepared_cmd.compile())}")
+    prepared_cmd.run(overwrite_output=True)
     return output_path
 
 
 class AudioProcessor:
     @staticmethod
-    def default_loudnorm(ffmpeg_inp, loudness=app_settings.default_loudness):
+    def default_loudnorm(ffmpeg_inp, loudness=app_settings.default_loudness, **kw):
         return ffmpeg_inp.audio.filter("loudnorm", i=loudness, tp=-0.7)
 
     @staticmethod
-    def speech_enhance(ffmpeg_inp):
+    def enhance_speech(ffmpeg_inp, **kw):
         return (
             ffmpeg_inp.audio.filter("highpass", f=150)
             .filter("asubcut", cutoff=80)
@@ -68,11 +75,23 @@ class AudioProcessor:
         )
 
     @staticmethod
-    def small_speakers(ffmpeg_inp, loudness=app_settings.default_loudness, cutoff=65):
-        cutoff = min(max(cutoff, 50), 150)
-        return ffmpeg_inp.audio.filter("asubcut", cutoff=cutoff).filter(
+    def small_speakers(
+        ffmpeg_inp,
+        loudness=app_settings.default_loudness,
+        low_cut=app_settings.default_low_cut,
+        **kw,
+    ):
+        low_cut = min(max(int(low_cut), app_settings.min_low_cut), app_settings.max_low_cut)
+        return ffmpeg_inp.audio.filter("asubcut", cutoff=low_cut).filter(
             "loudnorm", i=loudness, tp=-0.7
         )
+
+
+algorithms = {
+    MainCommands.make_it_loud.value: AudioProcessor.default_loudnorm,
+    MainCommands.enhance_speech.value: AudioProcessor.enhance_speech,
+    MainCommands.small_speakers.value: AudioProcessor.small_speakers,
+}
 
 
 class VideoProcessor:
@@ -100,13 +119,14 @@ class VideoProcessor:
                 else:
                     return stream.get("width"), stream.get("height")
 
-    def loudnorm(self, output_dir: str, target_loudness: Union[int, str]):
+    def loudnorm(self, output_dir: str, algorithm, kwargs):
         fname, ext = os.path.splitext(os.path.basename(self.file_path))
         output_path = os.path.join(output_dir, f"{fname}_out.mp4")
 
         inp = ffmpeg.input(self.file_path)
-        audio_norm = inp.audio.filter("loudnorm", i=target_loudness, tp=-0.7)
-        ffmpeg.output(
+        audio_norm = algorithms[algorithm](inp, **kwargs)
+
+        prepared_cmd = ffmpeg.output(
             inp.video,
             audio_norm,
             output_path,
@@ -114,7 +134,10 @@ class VideoProcessor:
             ar=44100,
             audio_bitrate=self.audio_bitrate,
             video_bitrate=self.video_bitrate,
-        ).run(overwrite_output=True)
+        )
+
+        logger.info(f"ffmpeg cmd:\n{' '.join(prepared_cmd.compile())}")
+        prepared_cmd.run(overwrite_output=True)
 
         return output_path
 

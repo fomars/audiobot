@@ -1,17 +1,30 @@
-import os
-import os.path
 import re
-import time
-
-import youtube_dl
-from youtube_dl import DownloadError
 import logging
+from telebot.types import ReplyKeyboardMarkup, BotCommandScopeChat, MenuButtonCommands
+from telebot.util import extract_arguments
 
+from app.commands import (
+    MainCommands,
+    UtilityCommands,
+    menu_commands,
+    bot_command_start,
+    bot_command_low_cut,
+    bot_command_loudness,
+)
 from app.settings import app_settings
 from app.bot import bot
-from app.tasks import make_it_loud, make_video_loud, process_streaming_audio
+from app.tasks import process_audio, process_video
 
 logger = logging.getLogger()
+
+
+def reset_menu(chat_id, commands=None, start=True):
+    commands = commands + [bot_command_start] * start if commands else [bot_command_start]
+    bot.set_my_commands(
+        commands,
+        BotCommandScopeChat(chat_id),
+    )
+    bot.set_chat_menu_button(menu_button=MenuButtonCommands(type="commands"))
 
 
 @bot.message_handler(func=lambda message: message.from_user.is_bot)
@@ -23,15 +36,139 @@ def filter_bots(message):
 def send_welcome(message):
     bot.reply_to(
         message,
-        f"""\
-Hi there, I am here to make your audio loud!
+        """Hi there, I am here to make your audio loud!
 I can make your vlog / podcast / mixtape evenly loud throughout its duration.
-I make the overall loudness to match -14 dB LUFS by default, \
-but you can set the target loudness between [{app_settings.min_loudness}, {app_settings.max_loudness}], \
-just send me the number!
+Choose an action from menu.
 Or simply send me your audio/video file and see how it works!
 """,
     )
+    reset_menu(message.chat.id, commands=menu_commands, start=False)
+
+
+@bot.message_handler(
+    commands=[UtilityCommands.loudness.value], func=lambda msg: not extract_arguments(msg.text)
+)
+def set_loudness(message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=4)
+    choices = [
+        f"/{UtilityCommands.loudness.value} {i}"
+        for i in range(app_settings.min_loudness, app_settings.max_loudness, 2)
+    ]
+    markup.add(*choices)
+    bot.send_message(
+        message.chat.id,
+        "Select target loudness in LUFS (Recommended: -16~-14)",
+        reply_markup=markup,
+    )
+
+
+@bot.message_handler(
+    commands=[UtilityCommands.loudness.value], func=lambda msg: extract_arguments(msg.text)
+)
+def set_loudness_(message):
+    value = extract_arguments(message.text)
+    try:
+        loudness = int(value)
+        assert app_settings.min_loudness <= loudness <= app_settings.max_loudness
+    except (ValueError, AssertionError):
+        bot.reply_to(
+            message,
+            f"Set loudness between [{app_settings.min_loudness}, {app_settings.max_loudness}]"
+            " (LUFS), or just send an audio to render at default"
+            f" {app_settings.default_loudness} LUFS",
+        )
+    else:
+        bot.add_data(message.from_user.id, message.chat.id, loudness=loudness)
+        bot.reply_to(message, f"Target loudness is set at {loudness} LUFS")
+
+
+@bot.message_handler(
+    commands=[UtilityCommands.low_cut.value], func=lambda msg: not extract_arguments(msg.text)
+)
+def set_low_cut(message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=4)
+    choices = [
+        f"/{UtilityCommands.low_cut.value} {i}"
+        for i in range(app_settings.min_low_cut, app_settings.max_low_cut + 1, 10)
+    ]
+    markup.add(*choices)
+    bot.send_message(
+        message.chat.id,
+        "Select low cut frequency (recommended: 65Hz)",
+        reply_markup=markup,
+    )
+
+
+@bot.message_handler(
+    commands=[UtilityCommands.low_cut.value], func=lambda msg: extract_arguments(msg.text)
+)
+def set_low_cut_(message):
+    value = extract_arguments(message.text)
+    try:
+        low_cut = int(value)
+        assert app_settings.min_low_cut <= low_cut <= app_settings.max_low_cut
+    except (ValueError, AssertionError):
+        bot.reply_to(
+            message,
+            f"Set low cut between [{app_settings.min_low_cut}, {app_settings.max_low_cut}] Hz, or"
+            f" just send an audio to render with default cut at {app_settings.default_low_cut} Hz",
+        )
+    else:
+        bot.add_data(message.from_user.id, message.chat.id, low_cut=low_cut)
+        bot.reply_to(message, f"Low cut frequency is set at {low_cut} Hz")
+
+
+@bot.message_handler(commands=[MainCommands.make_it_loud.value])
+def make_it_loud(message):
+    bot.set_state(message.from_user.id, MainCommands.make_it_loud.value, message.chat.id)
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
+        loudness = user_data.get("loudness", app_settings.default_loudness)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
+    markup.add(f"/{UtilityCommands.loudness.value}")
+    bot.send_message(
+        message.chat.id,
+        f"Target loudness is set at {loudness} LUFS\n"
+        "To render at this loudness, send media file.\n"
+        "To change target loudness, use command:\n"
+        f"/{UtilityCommands.loudness.value} [value]",
+        reply_markup=markup,
+    )
+    reset_menu(message.chat.id, [bot_command_loudness])
+
+
+@bot.message_handler(commands=[MainCommands.small_speakers.value])
+def small_speakers(message):
+    bot.set_state(message.from_user.id, MainCommands.small_speakers.value, message.chat.id)
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
+        loudness = user_data.get("loudness", app_settings.default_loudness)
+        low_cut = user_data.get("low_cut", app_settings.default_low_cut)
+
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
+    markup.add(f"/{UtilityCommands.loudness.value}", f"/{UtilityCommands.low_cut.value}")
+    bot.send_message(
+        message.chat.id,
+        f"Target loudness: {loudness} LUFS\n"
+        f"Low cut frequency: {low_cut} Hz\n"
+        "To render at this settings, send media file.\n"
+        "To change settings, use according commands:\n"
+        f"/{UtilityCommands.loudness.value} [value]\n"
+        f"/{UtilityCommands.loudness.low_cut} [value]",
+        reply_markup=markup,
+    )
+    reset_menu(message.chat.id, [bot_command_loudness, bot_command_low_cut])
+
+
+@bot.message_handler(commands=[MainCommands.enhance_speech.value])
+def enhance_speech(message):
+    bot.set_state(message.from_user.id, MainCommands.enhance_speech.value, message.chat.id)
+    bot.send_message(
+        message.chat.id,
+        "Send your audio/video file.\n"
+        "To preserve video quality, send as document.\n"
+        "If video is too big, it is recommended to extract audio with a third-party tool"
+        " previously",
+    )
+    reset_menu(message.chat.id)
 
 
 @bot.message_handler(content_types=["audio"])
@@ -39,29 +176,32 @@ def handle_audio(message):
     audio = message.audio
     if audio.file_size / 1024 / 1024 > app_settings.audio_size_limit:
         return bot.reply_to(message, "File size limit exceeded (350M)")
-    else:
-        bot.reply_to(message, "Downloading file")
-        file_info = bot.get_file(audio.file_id)
-        logger.info(f"file from {message.from_user}\ninfo: {file_info}")
-        target_loudness = (
-            bot.get_state(message.from_user.id, message.chat.id) or app_settings.default_loudness
-        )
-        bot.reply_to(
-            message,
-            f"Audio is being processed, target loudness: {target_loudness} LUFS",
-        )
-        try:
-            duration = audio.duration
-        except AttributeError:
-            duration = None
-        make_it_loud.delay(
-            file_info.file_path,
-            target_loudness,
-            duration,
-            message.chat.id,
-            message.id,
-            audio.file_name,
-        )
+    bot.reply_to(message, "Downloading file")
+    file_info = bot.get_file(audio.file_id)
+    logger.info(f"file from {message.from_user}\ninfo: {file_info}")
+    algorithm = (
+        bot.get_state(message.from_user.id, message.chat.id) or MainCommands.make_it_loud.value
+    )
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
+        kwargs = user_data
+    bot.reply_to(
+        message,
+        f"Audio is being processed\nalgorithm: {algorithm}\narguments: {kwargs}",
+    )
+    try:
+        duration = audio.duration
+    except AttributeError:
+        duration = None
+    process_audio.delay(
+        file_info.file_path,
+        algorithm,
+        kwargs,
+        duration,
+        message.chat.id,
+        message.id,
+        audio.file_name,
+    )
+    reset_menu(message.chat.id, menu_commands, start=False)
 
 
 @bot.message_handler(content_types=["video", "document"])
@@ -79,71 +219,23 @@ def handle_video(message):
     bot.reply_to(message, "Downloading file")
     file_info = bot.get_file(video.file_id)
     logger.info(f"file from {message.from_user}\ninfo: {file_info}")
-    target_loudness = (
-        bot.get_state(message.from_user.id, message.chat.id) or app_settings.default_loudness
+    algorithm = (
+        bot.get_state(message.from_user.id, message.chat.id) or MainCommands.make_it_loud.value
     )
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
+        kwargs = user_data
     bot.reply_to(
         message,
-        f"Video is being processed, target loudness: {target_loudness} LUFS.",
+        f"Video is being processed,\nalgorithm: {algorithm}\narguments: {kwargs}",
     )
-    make_video_loud.delay(
+    process_video.delay(
         file_info.file_path,
-        target_loudness,
+        algorithm,
+        kwargs,
         message.chat.id,
         message.id,
     )
-
-
-@bot.message_handler(func=lambda message: message.entities)
-def process_link(message):
-    if len(message.entities) > 1:
-        bot.reply_to(message, "Send only one URL")
-    else:
-        entity = message.entities[0]
-        if entity.type != "url":
-            bot.reply_to(message, "Send a valid URL")
-        else:
-            url = message.text[entity.offset : entity.offset + entity.length]  # noqa: E203
-            try:
-                with youtube_dl.YoutubeDL() as ydl:
-                    info = ydl.extract_info(url, download=False)
-                    title = info.get("title", "untitled")
-                bot.reply_to(
-                    message,
-                    f"Audio is being processed\nDuration: {info.get('duration')}",
-                )
-
-                result = process_streaming_audio.delay(url, title)
-                delay = 0.1
-                while not result.ready():
-                    time.sleep(delay)
-                    delay = min(delay * 1.2, 2)
-                output_fpath = result.get()
-                with open(output_fpath, "rb") as fileobj:
-                    bot.send_audio(
-                        message.chat.id,
-                        reply_to_message_id=message.id,
-                        audio=(os.path.basename(output_fpath), fileobj),
-                    )
-            except DownloadError:
-                bot.reply_to(message, "Media not found")
-
-
-@bot.message_handler(func=lambda message: True)
-def set_loudness(message):
-    try:
-        loudness = int(message.text)
-        assert app_settings.min_loudness <= loudness <= app_settings.max_loudness
-    except (ValueError, AssertionError):
-        bot.reply_to(
-            message,
-            f"Enter loudness between [{app_settings.min_loudness}, {app_settings.max_loudness}]"
-            " LUFS, or just send an audio to render at default"
-            f" {app_settings.default_loudness} LUFS",
-        )
-    else:
-        bot.set_state(message.from_user.id, str(loudness), message.chat.id)
-        bot.reply_to(message, f"Target loudness is set to {loudness} LUFS")
+    reset_menu(message.chat.id, menu_commands)
 
 
 @bot.message_handler(
@@ -161,4 +253,4 @@ def set_loudness(message):
     ]
 )
 def undefined(message):
-    bot.reply_to(message, "Send media file.")
+    bot.reply_to(message, "Unsupported media type")
