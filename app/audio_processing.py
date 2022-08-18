@@ -5,6 +5,7 @@ import ffmpeg
 from sys import argv
 import os
 from decimal import getcontext, Decimal
+from settings import app_settings
 
 getcontext().prec = 2
 
@@ -54,7 +55,7 @@ def loudnorm(file_path: str, output_dir: str, target_loudness: Union[int, str]):
 
 class AudioProcessor:
     @staticmethod
-    def default_loudnorm(ffmpeg_inp, loudness):
+    def default_loudnorm(ffmpeg_inp, loudness=app_settings.default_loudness):
         return ffmpeg_inp.audio.filter("loudnorm", i=loudness, tp=-0.7)
 
     @staticmethod
@@ -64,6 +65,13 @@ class AudioProcessor:
             .filter("asubcut", cutoff=80)
             .filter("lowpass", f=12500)
             .filter("loudnorm", i=-18, tp=-0.7)
+        )
+
+    @staticmethod
+    def small_speakers(ffmpeg_inp, loudness=app_settings.default_loudness, cutoff=65):
+        cutoff = min(max(cutoff, 50), 150)
+        return ffmpeg_inp.audio.filter("asubcut", cutoff=cutoff).filter(
+            "loudnorm", i=loudness, tp=-0.7
         )
 
 
