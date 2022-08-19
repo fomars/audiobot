@@ -1,6 +1,13 @@
 import re
 import logging
-from telebot.types import ReplyKeyboardMarkup, BotCommandScopeChat, MenuButtonCommands
+
+from telebot import formatting
+from telebot.types import (
+    ReplyKeyboardMarkup,
+    BotCommandScopeChat,
+    MenuButtonCommands,
+    ReplyKeyboardRemove,
+)
 from telebot.util import extract_arguments
 
 from app.commands import (
@@ -42,22 +49,35 @@ Choose an action from menu.
 Or simply send me your audio/video file and see how it works!
 """,
     )
+    bot.reset_data(message.from_user.id)
     reset_menu(message.chat.id, commands=menu_commands, start=False)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
+    choices = [f"/{command.value}" for command in MainCommands]
+    markup.add(*choices)
 
 
 @bot.message_handler(
     commands=[UtilityCommands.loudness.value], func=lambda msg: not extract_arguments(msg.text)
 )
 def set_loudness(message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=4)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=3)
     choices = [
         f"/{UtilityCommands.loudness.value} {i}"
         for i in range(app_settings.min_loudness, app_settings.max_loudness, 2)
     ]
     markup.add(*choices)
+
+    msg_text = formatting.format_text(
+        formatting.escape_markdown("Select target loudness in "),
+        formatting.mlink("LUFS", url=app_settings.lufs_rtfm_link),
+        formatting.escape_markdown(" (Recommended: -18~-14)"),
+        separator="",
+    )
     bot.send_message(
         message.chat.id,
-        "Select target loudness in LUFS (Recommended: -16~-14)",
+        msg_text,
+        parse_mode="MarkdownV2",
+        disable_web_page_preview=True,
         reply_markup=markup,
     )
 
@@ -71,15 +91,23 @@ def set_loudness_(message):
         loudness = int(value)
         assert app_settings.min_loudness <= loudness <= app_settings.max_loudness
     except (ValueError, AssertionError):
+        msg_text = formatting.format_text(
+            formatting.escape_markdown(
+                f"Set loudness between [{app_settings.min_loudness}, {app_settings.max_loudness}] "
+            ),
+            formatting.mlink("LUFS", url=app_settings.lufs_rtfm_link),
+            separator="",
+        )
         bot.reply_to(
             message,
-            f"Set loudness between [{app_settings.min_loudness}, {app_settings.max_loudness}]"
-            " (LUFS), or just send an audio to render at default"
-            f" {app_settings.default_loudness} LUFS",
+            text=msg_text,
+            parse_mode="MarkdownV2",
+            disable_web_page_preview=True,
         )
     else:
         bot.add_data(message.from_user.id, message.chat.id, loudness=loudness)
-        bot.reply_to(message, f"Target loudness is set at {loudness} LUFS")
+        markup = ReplyKeyboardRemove()
+        bot.reply_to(message, f"Target loudness is set at {loudness} LUFS", reply_markup=markup)
 
 
 @bot.message_handler(
@@ -115,7 +143,8 @@ def set_low_cut_(message):
         )
     else:
         bot.add_data(message.from_user.id, message.chat.id, low_cut=low_cut)
-        bot.reply_to(message, f"Low cut frequency is set at {low_cut} Hz")
+        markup = ReplyKeyboardRemove()
+        bot.reply_to(message, f"Low cut frequency is set at {low_cut} Hz", reply_markup=markup)
 
 
 @bot.message_handler(commands=[MainCommands.make_it_loud.value])
@@ -123,14 +152,24 @@ def make_it_loud(message):
     bot.set_state(message.from_user.id, MainCommands.make_it_loud.value, message.chat.id)
     with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
         loudness = user_data.get("loudness", app_settings.default_loudness)
+
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
     markup.add(f"/{UtilityCommands.loudness.value}")
+
+    msg_text = formatting.format_text(
+        formatting.escape_markdown(f"Target loudness is set at {loudness} "),
+        formatting.mlink("LUFS", url=app_settings.lufs_rtfm_link),
+        formatting.escape_markdown(
+            "\nTo render at this loudness, send media file.\nTo change target loudness, use"
+            f" command:\n/{UtilityCommands.loudness.value} [value]"
+        ),
+        separator="",
+    )
     bot.send_message(
         message.chat.id,
-        f"Target loudness is set at {loudness} LUFS\n"
-        "To render at this loudness, send media file.\n"
-        "To change target loudness, use command:\n"
-        f"/{UtilityCommands.loudness.value} [value]",
+        text=msg_text,
+        parse_mode="MarkdownV2",
+        disable_web_page_preview=True,
         reply_markup=markup,
     )
     reset_menu(message.chat.id, [bot_command_loudness])
@@ -145,14 +184,25 @@ def small_speakers(message):
 
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
     markup.add(f"/{UtilityCommands.loudness.value}", f"/{UtilityCommands.low_cut.value}")
+
+    msg_text = formatting.format_text(
+        formatting.escape_markdown(f"Target loudness: {loudness} "),
+        formatting.mlink("LUFS", url=app_settings.lufs_rtfm_link),
+        formatting.escape_markdown(
+            f"\nLow cut frequency: {low_cut} Hz\n"
+            "To render at this settings, send media file.\n"
+            "To change settings, use corresponding commands:\n"
+            f"/{UtilityCommands.loudness.value} [value]\n"
+            f"/{UtilityCommands.low_cut.value} [value]",
+        ),
+        separator="",
+    )
+
     bot.send_message(
         message.chat.id,
-        f"Target loudness: {loudness} LUFS\n"
-        f"Low cut frequency: {low_cut} Hz\n"
-        "To render at this settings, send media file.\n"
-        "To change settings, use according commands:\n"
-        f"/{UtilityCommands.loudness.value} [value]\n"
-        f"/{UtilityCommands.loudness.low_cut} [value]",
+        text=msg_text,
+        parse_mode="MarkdownV2",
+        disable_web_page_preview=True,
         reply_markup=markup,
     )
     reset_menu(message.chat.id, [bot_command_loudness, bot_command_low_cut])
@@ -186,7 +236,7 @@ def handle_audio(message):
         kwargs = user_data
     bot.reply_to(
         message,
-        f"Audio is being processed\nalgorithm: {algorithm}\narguments: {kwargs}",
+        "Audio is being processed.",
     )
     try:
         duration = audio.duration
@@ -226,7 +276,7 @@ def handle_video(message):
         kwargs = user_data
     bot.reply_to(
         message,
-        f"Video is being processed,\nalgorithm: {algorithm}\narguments: {kwargs}",
+        "Video is being processed.",
     )
     process_video.delay(
         file_info.file_path,

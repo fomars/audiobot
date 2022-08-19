@@ -51,7 +51,7 @@ def loudnorm(file_path: str, output_dir: str, algorithm, kwargs):
     bitrate = min(get_audio_bitrate(file_path), 256000)
 
     inp = ffmpeg.input(file_path)
-    prepared_cmd = algorithms[algorithm](inp, **kwargs).output(
+    prepared_cmd = algorithms.get(algorithm, AudioProcessor.default_loudnorm)(inp, **kwargs).output(
         output_path, ar=44100, format="mp3", audio_bitrate=bitrate
     )
 

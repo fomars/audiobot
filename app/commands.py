@@ -7,6 +7,9 @@ class MainCommands(Enum):
     enhance_speech = "enhance_speech"
     small_speakers = "small_speakers"
 
+    def _missing_(cls, value: object):
+        return cls.make_it_loud
+
 
 class UtilityCommands(Enum):
     loudness = "loudness"
@@ -21,13 +24,11 @@ bot_command_low_cut = BotCommand(UtilityCommands.low_cut.value, "Set low cut fre
 menu_commands = [
     BotCommand(
         MainCommands.make_it_loud.value,
-        "Dynamically modify the loudness of your audio making it evenly loud throughout its"
-        " duration.",
+        "Make your audio evenly loud",
     ),
     BotCommand(
         MainCommands.enhance_speech.value,
-        "Remove unwanted frequencies, bring your speech to the front and make it evenly loud. Good"
-        " for vlog, podcast, etc.",
+        "Emphasize your speech and make it evenly loud. Good for vlog, podcast, etc.",
     ),
     BotCommand(
         MainCommands.small_speakers.value,
