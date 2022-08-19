@@ -21,7 +21,7 @@ bot_command_start = BotCommand(UtilityCommands.start.value, "Start over")
 bot_command_loudness = BotCommand(UtilityCommands.loudness.value, "Set target loudness")
 bot_command_low_cut = BotCommand(UtilityCommands.low_cut.value, "Set low cut frequency")
 
-menu_commands = [
+main_commands = [
     BotCommand(
         MainCommands.make_it_loud.value,
         "Make your audio evenly loud",

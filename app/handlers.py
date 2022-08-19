@@ -13,7 +13,7 @@ from telebot.util import extract_arguments
 from app.commands import (
     MainCommands,
     UtilityCommands,
-    menu_commands,
+    main_commands,
     bot_command_start,
     bot_command_low_cut,
     bot_command_loudness,
@@ -42,7 +42,7 @@ def filter_bots(message):
 @bot.message_handler(commands=["help", "start"])
 def send_welcome(message):
     bot.reset_data(message.from_user.id)
-    reset_menu(message.chat.id, commands=menu_commands, start=False)
+    reset_menu(message.chat.id, commands=main_commands, start=False)
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
     choices = [f"/{command.value}" for command in MainCommands]
     markup.add(*choices)
@@ -265,6 +265,7 @@ def handle_audio(message):
         message.id,
         audio.file_name,
     )
+    reset_menu(message.chat.id, commands=main_commands)
 
 
 @bot.message_handler(content_types=["video", "document"])
@@ -304,6 +305,7 @@ def handle_video(message):
         message.chat.id,
         message.id,
     )
+    reset_menu(message.chat.id, commands=main_commands)
 
 
 @bot.message_handler(

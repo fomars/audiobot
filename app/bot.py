@@ -4,7 +4,7 @@ from telebot.storage import StateRedisStorage
 from telebot import TeleBot, apihelper, logger
 from telebot.types import BotCommandScopeAllPrivateChats, MenuButtonCommands
 
-from app.commands import menu_commands
+from app.commands import main_commands
 from app.middleware import AccountingMiddleware
 from app import settings
 
@@ -28,7 +28,7 @@ bot = TeleBot(
 bot.setup_middleware(AccountingMiddleware())
 
 bot.set_my_commands(
-    menu_commands,
+    main_commands,
     BotCommandScopeAllPrivateChats(),
 )
 
