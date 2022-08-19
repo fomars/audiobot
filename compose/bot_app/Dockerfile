@@ -5,9 +5,15 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH="."
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN     apt-get -yqq update && \
-        apt-get install -yqq --no-install-recommends ca-certificates ffmpeg && \
-        apt-get clean
+RUN apt-get -yqq update && \
+    apt-get install -yqq --no-install-recommends ca-certificates wget xz-utils && \
+    apt-get clean
+
+RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
+    tar -xvf *.tar.xz && \
+    rm -f *.tar.xz && \
+    mv ./ffmpeg-*/ffmpeg /usr/bin/ffmpeg && \
+    mv ./ffmpeg-*/ffprobe /usr/bin/ffprobe
 
 COPY requirements.txt ./
 
