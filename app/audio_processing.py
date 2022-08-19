@@ -125,7 +125,7 @@ class VideoProcessor:
         output_path = os.path.join(output_dir, f"{fname}_out.mp4")
 
         inp = ffmpeg.input(self.file_path)
-        audio_norm = algorithms[algorithm](inp, **kwargs)
+        audio_norm = algorithms.get(algorithm, AudioProcessor.default_loudnorm)(inp, **kwargs)
 
         prepared_cmd = ffmpeg.output(
             inp.video,
