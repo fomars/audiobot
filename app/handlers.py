@@ -42,6 +42,7 @@ def filter_bots(message):
 @bot.message_handler(commands=["help", "start"])
 def send_welcome(message):
     bot.reset_data(message.from_user.id)
+    bot.delete_state(message.from_user.id)
     reset_menu(message.chat.id, commands=main_commands, start=False)
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
     choices = [f"/{command.value}" for command in MainCommands]
@@ -239,7 +240,7 @@ def handle_audio(message):
         bot.get_state(message.from_user.id, message.chat.id) or MainCommands.make_it_loud.value
     )
     with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
-        kwargs = user_data
+        kwargs = user_data or {}
     bot.reply_to(message, "Downloading file", reply_markup=ReplyKeyboardRemove())
     file_info = bot.get_file(audio.file_id)
     logger.info(
@@ -285,7 +286,7 @@ def handle_video(message):
         bot.get_state(message.from_user.id, message.chat.id) or MainCommands.make_it_loud.value
     )
     with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
-        kwargs = user_data
+        kwargs = user_data or {}
     bot.reply_to(message, "Downloading file", reply_markup=ReplyKeyboardRemove())
     file_info = bot.get_file(video.file_id)
     logger.info(
