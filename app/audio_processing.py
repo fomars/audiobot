@@ -69,8 +69,9 @@ class AudioProcessor:
     def enhance_speech(ffmpeg_inp, **kw):
         return (
             ffmpeg_inp.audio.filter("highpass", f=150)
-            .filter("asubcut", cutoff=80)
-            .filter("lowpass", f=12500)
+            .filter("asubcut", cutoff=90)
+            .filter("lowpass", f=8500)
+            .filter("equalizer", frequency=380, width=100, width_type="h", gain=-5)
             .filter("loudnorm", i=-18, tp=-0.7)
         )
 

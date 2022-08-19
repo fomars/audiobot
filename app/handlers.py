@@ -41,19 +41,18 @@ def filter_bots(message):
 
 @bot.message_handler(commands=["help", "start"])
 def send_welcome(message):
-    bot.reply_to(
-        message,
-        """Hi there, I am here to make your audio loud!
-I can make your vlog / podcast / mixtape evenly loud throughout its duration.
-Choose an action from menu.
-Or simply send me your audio/video file and see how it works!
-""",
-    )
     bot.reset_data(message.from_user.id)
     reset_menu(message.chat.id, commands=menu_commands, start=False)
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
     choices = [f"/{command.value}" for command in MainCommands]
     markup.add(*choices)
+    bot.reply_to(
+        message,
+        "Hi there, I am here to make your audio/video loud!\n"
+        "I can make your vlog / podcast / mixtape evenly loud throughout its duration.\n"
+        "Choose an action from menu or simply send me your audio/video file and see how it works!",
+        reply_markup=markup,
+    )
 
 
 @bot.message_handler(
@@ -106,15 +105,18 @@ def set_loudness_(message):
         )
     else:
         bot.add_data(message.from_user.id, message.chat.id, loudness=loudness)
-        markup = ReplyKeyboardRemove()
-        bot.reply_to(message, f"Target loudness is set at {loudness} LUFS", reply_markup=markup)
+        bot.reply_to(
+            message,
+            f"Target loudness is set at {loudness} LUFS",
+            reply_markup=ReplyKeyboardRemove(),
+        )
 
 
 @bot.message_handler(
     commands=[UtilityCommands.low_cut.value], func=lambda msg: not extract_arguments(msg.text)
 )
 def set_low_cut(message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=4)
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=3)
     choices = [
         f"/{UtilityCommands.low_cut.value} {i}"
         for i in range(app_settings.min_low_cut, app_settings.max_low_cut + 1, 10)
@@ -122,7 +124,7 @@ def set_low_cut(message):
     markup.add(*choices)
     bot.send_message(
         message.chat.id,
-        "Select low cut frequency (recommended: 65Hz)",
+        "Select low cut frequency (recommended: 60-90Hz)",
         reply_markup=markup,
     )
 
@@ -143,8 +145,9 @@ def set_low_cut_(message):
         )
     else:
         bot.add_data(message.from_user.id, message.chat.id, low_cut=low_cut)
-        markup = ReplyKeyboardRemove()
-        bot.reply_to(message, f"Low cut frequency is set at {low_cut} Hz", reply_markup=markup)
+        bot.reply_to(
+            message, f"Low cut frequency is set at {low_cut} Hz", reply_markup=ReplyKeyboardRemove()
+        )
 
 
 @bot.message_handler(commands=[MainCommands.make_it_loud.value])
@@ -157,11 +160,14 @@ def make_it_loud(message):
     markup.add(f"/{UtilityCommands.loudness.value}")
 
     msg_text = formatting.format_text(
-        formatting.escape_markdown(f"Target loudness is set at {loudness} "),
+        formatting.escape_markdown(
+            f"We are going to render your audio at target loudness of {loudness} "
+        ),
         formatting.mlink("LUFS", url=app_settings.lufs_rtfm_link),
         formatting.escape_markdown(
-            "\nTo render at this loudness, send media file.\nTo change target loudness, use"
-            f" command:\n/{UtilityCommands.loudness.value} [value]"
+            "\nTo change target loudness, use"
+            f" command:\n/{UtilityCommands.loudness.value} [value]\nTo continue, send your media"
+            " file."
         ),
         separator="",
     )
@@ -186,12 +192,14 @@ def small_speakers(message):
     markup.add(f"/{UtilityCommands.loudness.value}", f"/{UtilityCommands.low_cut.value}")
 
     msg_text = formatting.format_text(
-        formatting.escape_markdown(f"Target loudness: {loudness} "),
+        formatting.escape_markdown(
+            f"We are going to render your audio at target loudness of: {loudness} "
+        ),
         formatting.mlink("LUFS", url=app_settings.lufs_rtfm_link),
         formatting.escape_markdown(
             f"\nLow cut frequency: {low_cut} Hz\n"
-            "To render at this settings, send media file.\n"
-            "To change settings, use corresponding commands:\n"
+            "To render at these settings, send media file.\n"
+            "To change settings, use corresponding commands and then send file:\n"
             f"/{UtilityCommands.loudness.value} [value]\n"
             f"/{UtilityCommands.low_cut.value} [value]",
         ),
@@ -213,10 +221,9 @@ def enhance_speech(message):
     bot.set_state(message.from_user.id, MainCommands.enhance_speech.value, message.chat.id)
     bot.send_message(
         message.chat.id,
-        "Send your audio/video file.\n"
-        "To preserve video quality, send as document.\n"
-        "If video is too big, it is recommended to extract audio with a third-party tool"
-        " previously",
+        "Send your audio/video file.\nTo preserve video quality, send it as document.\nIf video is"
+        " too big, it is recommended to extract audio with a third-party tool and send only it.",
+        reply_markup=ReplyKeyboardRemove()
     )
     reset_menu(message.chat.id)
 
@@ -225,15 +232,22 @@ def enhance_speech(message):
 def handle_audio(message):
     audio = message.audio
     if audio.file_size / 1024 / 1024 > app_settings.audio_size_limit:
-        return bot.reply_to(message, "File size limit exceeded (350M)")
-    bot.reply_to(message, "Downloading file")
-    file_info = bot.get_file(audio.file_id)
-    logger.info(f"file from {message.from_user}\ninfo: {file_info}")
+        return bot.reply_to(
+            message, f"Audio size limit exceeded ({app_settings.audio_size_limit}M)"
+        )
     algorithm = (
         bot.get_state(message.from_user.id, message.chat.id) or MainCommands.make_it_loud.value
     )
     with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
         kwargs = user_data
+    bot.reply_to(message, "Downloading file", reply_markup=ReplyKeyboardRemove())
+    file_info = bot.get_file(audio.file_id)
+    logger.info(
+        f"file from {message.from_user}\n"
+        f"info: {file_info}\n"
+        f"algorithm: {algorithm}\n"
+        f"kwargs: {kwargs}"
+    )
     bot.reply_to(
         message,
         "Audio is being processed.",
@@ -251,7 +265,6 @@ def handle_audio(message):
         message.id,
         audio.file_name,
     )
-    reset_menu(message.chat.id, menu_commands, start=False)
 
 
 @bot.message_handler(content_types=["video", "document"])
@@ -264,16 +277,22 @@ def handle_video(message):
         return bot.reply_to(message, "Unsupported media type")
 
     if video.file_size / 1024 / 1024 > app_settings.video_size_limit:
-        return bot.reply_to(message, "File size limit exceeded (1200M)")
-
-    bot.reply_to(message, "Downloading file")
-    file_info = bot.get_file(video.file_id)
-    logger.info(f"file from {message.from_user}\ninfo: {file_info}")
+        return bot.reply_to(
+            message, f"Video size limit exceeded ({app_settings.video_size_limit}M)"
+        )
     algorithm = (
         bot.get_state(message.from_user.id, message.chat.id) or MainCommands.make_it_loud.value
     )
     with bot.retrieve_data(message.from_user.id, message.chat.id) as user_data:
         kwargs = user_data
+    bot.reply_to(message, "Downloading file", reply_markup=ReplyKeyboardRemove())
+    file_info = bot.get_file(video.file_id)
+    logger.info(
+        f"file from {message.from_user}\n"
+        f"info: {file_info}\n"
+        f"algorithm: {algorithm}\n"
+        f"kwargs: {kwargs}"
+    )
     bot.reply_to(
         message,
         "Video is being processed.",
@@ -285,7 +304,6 @@ def handle_video(message):
         message.chat.id,
         message.id,
     )
-    reset_menu(message.chat.id, menu_commands)
 
 
 @bot.message_handler(

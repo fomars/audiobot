@@ -28,10 +28,10 @@ menu_commands = [
     ),
     BotCommand(
         MainCommands.enhance_speech.value,
-        "Emphasize your speech and make it evenly loud. Good for vlog, podcast, etc.",
+        "Use for vlog, podcast, etc. Emphasizes speech and makes it evenly loud.",
     ),
     BotCommand(
         MainCommands.small_speakers.value,
-        "Optimise audio for your portable speaker and increase its loudness.",
+        "Optimise for portable speaker and increase loudness.",
     ),
 ]
