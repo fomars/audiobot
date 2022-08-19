@@ -10,6 +10,8 @@ from app import settings
 
 if settings.DEBUG:
     logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.INFO)
 
 state_storage = StateRedisStorage(
     host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.STORAGE_DB
