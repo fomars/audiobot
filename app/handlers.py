@@ -39,7 +39,7 @@ def filter_bots(message):
     pass
 
 
-@bot.message_handler(commands=["help", "start"])
+@bot.message_handler(commands=["start"])
 def send_welcome(message):
     bot.reset_data(message.from_user.id)
     bot.delete_state(message.from_user.id)
@@ -51,8 +51,30 @@ def send_welcome(message):
         message,
         "Hi there, I am here to make your audio/video loud!\n"
         "I can make your vlog / podcast / mixtape evenly loud throughout its duration.\n"
-        "Choose an action from menu or simply send me your audio/video file and see how it works!",
+        "1. Choose an action from menu.\n"
+        "2. Set the parameters if necessary.\n"
+        "3. Send your media file.\n"
+        "4. Kindly wait. Processing audio file usually takes 1/5 of its duration; "
+        "video processing takes about 100% of video duration.\n"
+        "! Limitations:\n"
+        f"Audio file size: {app_settings.audio_size_limit}MB\n"
+        f"Video file size: {app_settings.video_size_limit}MB",
         reply_markup=markup,
+    )
+
+
+@bot.message_handler(commands=["help"])
+def show_help(message):
+    bot.reply_to(
+        message,
+        "1. Choose an action from menu.\n"
+        "2. Set the parameters if necessary.\n"
+        "3. Send your media file.\n"
+        "4. Kindly wait. Processing audio file usually takes 1/5 of its duration; "
+        "video processing takes about 100% of video duration.\n"
+        "! Limitations:\n"
+        f"Audio file size: {app_settings.audio_size_limit}MB\n"
+        f"Video file size: {app_settings.video_size_limit}MB",
     )
 
 
@@ -224,7 +246,7 @@ def enhance_speech(message):
         message.chat.id,
         "Send your audio/video file.\nTo preserve video quality, send it as document.\nIf video is"
         " too big, it is recommended to extract audio with a third-party tool and send only it.",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=ReplyKeyboardRemove(),
     )
     reset_menu(message.chat.id)
 

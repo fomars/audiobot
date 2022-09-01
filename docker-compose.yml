@@ -43,7 +43,12 @@ services:
     image: audiobot
     platform: linux/x86_64
     entrypoint: celery
-    command: "-A app.tasks worker --loglevel=INFO"
+    command:
+      - -A
+      - app.tasks
+      - worker
+      - --loglevel
+      - INFO
     volumes:
       - ./mount/output:/app/output
       - ./mount/telegram-bot-api:/app/input

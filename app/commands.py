@@ -15,9 +15,11 @@ class UtilityCommands(Enum):
     loudness = "loudness"
     low_cut = "low_cut"
     start = "start"
+    help = "help"
 
 
 bot_command_start = BotCommand(UtilityCommands.start.value, "Start over")
+bot_command_help = BotCommand(UtilityCommands.help.value, "Help")
 bot_command_loudness = BotCommand(UtilityCommands.loudness.value, "Set target loudness")
 bot_command_low_cut = BotCommand(UtilityCommands.low_cut.value, "Set low cut frequency")
 
