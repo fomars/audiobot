@@ -18,6 +18,7 @@ from app.commands import (
     bot_command_low_cut,
     bot_command_loudness,
 )
+from app.models.user import SubscriptionPlan
 from app.settings import app_settings
 from app.bot import bot
 from app.tasks import process_audio, process_video
@@ -57,8 +58,8 @@ def send_welcome(message):
         "4. Kindly wait. Processing audio file usually takes 1/5 of its duration; "
         "video processing takes about 100% of video duration.\n"
         "! Limitations:\n"
-        f"Audio file size: {app_settings.audio_size_limit}MB\n"
-        f"Video file size: {app_settings.video_size_limit}MB",
+        f"Audio file size: {app_settings.audio_size_default_limit}MB\n"
+        f"Video file size: {app_settings.video_size_default_limit}MB",
         reply_markup=markup,
     )
 
@@ -73,8 +74,8 @@ def show_help(message):
         "4. Kindly wait. Processing audio file usually takes 1/5 of its duration; "
         "video processing takes about 100% of video duration.\n"
         "! Limitations:\n"
-        f"Audio file size: {app_settings.audio_size_limit}MB\n"
-        f"Video file size: {app_settings.video_size_limit}MB",
+        f"Audio file size: {app_settings.audio_size_default_limit}MB\n"
+        f"Video file size: {app_settings.video_size_default_limit}MB",
     )
 
 
@@ -252,11 +253,17 @@ def enhance_speech(message):
 
 
 @bot.message_handler(content_types=["audio"])
-def handle_audio(message):
+def handle_audio(message, data):
     audio = message.audio
-    if audio.file_size / 1024 / 1024 > app_settings.audio_size_limit:
+    subscription_plan = data["subscription_plan"]
+    limit = (
+        app_settings.audio_size_default_limit
+        if subscription_plan is SubscriptionPlan.free
+        else app_settings.file_size_abs_limit
+    )
+    if audio.file_size / 1024 / 1024 > limit:
         return bot.reply_to(
-            message, f"Audio size limit exceeded ({app_settings.audio_size_limit}M)"
+            message, f"Audio size limit exceeded ({app_settings.audio_size_default_limit}M)"
         )
     algorithm = (
         bot.get_state(message.from_user.id, message.chat.id) or MainCommands.make_it_loud.value
@@ -300,9 +307,9 @@ def handle_video(message):
     else:
         return bot.reply_to(message, "Unsupported media type")
 
-    if video.file_size / 1024 / 1024 > app_settings.video_size_limit:
+    if video.file_size / 1024 / 1024 > app_settings.video_size_default_limit:
         return bot.reply_to(
-            message, f"Video size limit exceeded ({app_settings.video_size_limit}M)"
+            message, f"Video size limit exceeded ({app_settings.video_size_default_limit}M)"
         )
     algorithm = (
         bot.get_state(message.from_user.id, message.chat.id) or MainCommands.make_it_loud.value

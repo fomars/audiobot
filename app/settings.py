@@ -30,8 +30,10 @@ class AppSettings(BaseSettings):
     audio_send_timeout: int = 60
     video_send_timeout: int = 300
     read_timeout: int = 300
-    audio_size_limit: int = 350
-    video_size_limit: int = 1000
+    audio_size_default_limit: int = 350
+    video_size_default_limit: int = 1000
+    file_size_abs_limit: int = 2000
+    audio_len_abs_limit: int = 2000000 / 256
     max_loudness: int = -7
     min_loudness: int = -24
     default_loudness: int = -14

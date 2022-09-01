@@ -1,7 +1,15 @@
+from enum import Enum
+
 from sqlalchemy import Column, BigInteger, String, Boolean, DateTime
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import insert, ENUM
 
 from app.db import Base, utcnow, Session
+
+
+class SubscriptionPlan(str, Enum):
+    free = "free"
+    limited = "limited"
+    max = "max"
 
 
 class User(Base):
@@ -13,10 +21,15 @@ class User(Base):
     first_name = Column(String(255), nullable=False)
     is_bot = Column(Boolean, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=utcnow())
-
     last_message_at = Column(
         DateTime, nullable=False, onupdate=utcnow(), server_default=utcnow(), index=True
     )
+    subscription_plan = Column(
+        ENUM(SubscriptionPlan, name="subscription_plan"),
+        nullable=False,
+        server_default=SubscriptionPlan.free,
+    )
+    subscription_ends_at = Column(DateTime, nullable=False, server_default="infinity")
 
 
 class UserDAL:
@@ -45,6 +58,7 @@ class UserDAL:
                         "last_message_at": utcnow(),
                     },
                 )
-            )
-            session.execute(query)
+            ).returning(*User.__table__.c)
+            result_row = session.execute(query).fetchall()
             session.commit()
+            return result_row
