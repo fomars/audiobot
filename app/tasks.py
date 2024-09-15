@@ -8,6 +8,7 @@ import logging
 
 from app.audio_processing import loudnorm, VideoProcessor
 from app.files import send_audio, send_video
+from app.models.job import Job
 from app.settings import (
     REDIS_HOST,
     REDIS_PORT,
@@ -36,11 +37,14 @@ def process_audio(
     duration,
     chat_id,
     msg_id,
+    user_id,
     og_filename,
 ):
+    job_id = Job.create(user_id=user_id, frozen_amount=0)
     fpath = api_fpath.replace(API_WORKDIR, INPUT_DIR)
     processed_fpath = loudnorm(fpath, OUTPUT_DIR, algorithm, kwargs)
     send_audio(processed_fpath, chat_id, msg_id, og_filename, duration)
+    Job.mark_completed(job_id)
     os.remove(fpath)
 
 

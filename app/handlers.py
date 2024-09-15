@@ -286,6 +286,7 @@ def handle_audio(message):
         duration,
         message.chat.id,
         message.id,
+        message.user_id,
         audio.file_name,
     )
     reset_menu(message.chat.id, commands=main_commands)

@@ -14,15 +14,15 @@ class User(Base):
     first_name = Column(String(255), nullable=False)
     is_bot = Column(Boolean, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=utcnow())
-
     last_message_at = Column(
         DateTime, nullable=False, onupdate=utcnow(), server_default=utcnow(), index=True
     )
-
+    balance_seconds = Column(BigInteger, nullable=False, default=0, server_default='0')
+    frozen_balance = Column(BigInteger, default=0)
 
 class UserDAL:
     @staticmethod
-    def upsert_user(tg_id: int, first_name: str, is_bot: bool, tg_username: str = None):
+    def upsert_user(tg_id: int, first_name: str, is_bot: bool, tg_username: str = None) -> User:
         with Session() as session:
             user = User(tg_username=tg_username, first_name=first_name, is_bot=is_bot)
             user.tg_ig = tg_id
@@ -46,6 +46,7 @@ class UserDAL:
                         "last_message_at": utcnow(),
                     },
                 )
-            )
-            session.execute(query)
+            ).returning(*User.__table__.c)
+            result_row = session.execute(query).fetchone()
             session.commit()
+            return result_row

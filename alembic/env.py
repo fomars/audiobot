@@ -6,7 +6,7 @@ from alembic import context
 
 from app.settings import db_settings
 from app.db import Base
-from app.models import user  # noqa: F401
+from app.models import *  # noqa: F401
 
 
 # this is the Alembic Config object, which provides
