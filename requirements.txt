@@ -1,11 +1,12 @@
 ffmpeg-python~=0.2
 pyTelegramBotAPI~=4.6
-redis~=4.3
+redis~=5.0
 celery~=5.2
 boto3~=1.24
 youtube_dl
 sqlalchemy~=1.4
 asyncpg~=0.26
 alembic~=1.8
-pydantic
+pydantic~=2.9
+pydantic-settings>=0.2
 psycopg2-binary~=2.9

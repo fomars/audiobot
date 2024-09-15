@@ -8,7 +8,8 @@ class User(Base):
     __tablename__ = "users"
     __mapper_args__ = {"eager_defaults": True}
 
-    tg_id = Column(BigInteger, primary_key=True, autoincrement=False)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    tg_id = Column(BigInteger, unique=True, index=True)
     tg_username = Column(String(255))
     first_name = Column(String(255), nullable=False)
     is_bot = Column(Boolean, nullable=False)

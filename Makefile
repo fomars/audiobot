@@ -19,6 +19,9 @@ run_new_worker:
 -e REDIS_PORT=6379 -e REDIS_HOST=redis -e API_URL=http://telegram-bot-api:8081/bot --network audiobot_default \
 audiobot celery -A app.tasks worker --loglevel=DEBUG
 
+update_api:
+	docker-compose pull telegram-bot-api && docker-compose up --detach
+
 stop:
 	docker-compose down
 
@@ -35,7 +38,7 @@ migrate:  ## Apply latest alembic migrations
 deploy:
 	make build
 	make run
-	docker exec -it bot python3 -m alembic upgrade head
+	docker exec -it bot python3 -m alembic upgrade head  ## apply migrations inside container
 
 drop_db:
 	psql "$(POSTGRES_DSN)" -c "DROP DATABASE IF EXISTS ${POSTGRES_DB};"

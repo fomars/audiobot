@@ -1,6 +1,6 @@
 import os
 
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 DEBUG = bool(os.getenv("DEBUG"))
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "app/output")
