@@ -17,8 +17,9 @@ class User(Base):
     last_message_at = Column(
         DateTime, nullable=False, onupdate=utcnow(), server_default=utcnow(), index=True
     )
-    balance_seconds = Column(BigInteger, nullable=False, default=0, server_default='0')
+    balance_seconds = Column(BigInteger, nullable=False, default=0, server_default="0")
     frozen_balance = Column(BigInteger, default=0)
+
 
 class UserDAL:
     @staticmethod
