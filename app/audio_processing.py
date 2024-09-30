@@ -21,6 +21,33 @@ NORMALIZE_CMD = (
 )
 
 
+def get_file_duration_seconds(file_path: str) -> int:
+    """
+    Get the duration of an audio file.
+
+    Args:
+        file_path (str): Path to the audio file.
+
+    Returns:
+        float: Duration of the audio file in seconds.
+
+    Examples:
+        >>> get_file_duration_seconds("samples/input/Amen-break.wav")
+        7
+        >>> get_file_duration_seconds("samples/input/rec1.m4a")
+        23
+        >>> get_file_duration_seconds("samples/input/exam 1.3.aif")
+        921
+        >>> get_file_duration_seconds("samples/input/file_100.mp3")
+        7
+    """
+    try:
+        probe = ffmpeg.probe(file_path)
+        return int(Decimal(probe["format"]["duration"]).to_integral_value())
+    except ffmpeg.Error as e:
+        logger.error(f"Error while probing {file_path}", exc_info=e.stderr.decode())
+
+
 def get_max_vol(file_path: str):
     stdout, stderr = (
         ffmpeg.input(file_path)

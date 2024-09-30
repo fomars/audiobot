@@ -42,6 +42,7 @@ class AppSettings(BaseSettings):
     video_mime_types: str = r"^video/[a-zA-Z0-9-_]+$"
     lufs_rtfm_link: str = "https://en.wikipedia.org/wiki/Audio_normalization#Loudness_normalization"
     cutoff_rtfm_link: str = "https://en.wikipedia.org/wiki/Audio_filter"
+    free_balance_seconds: int = 60 * 60
 
 
 class DBSettings(BaseSettings):

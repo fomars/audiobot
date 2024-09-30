@@ -6,9 +6,10 @@ import youtube_dl
 import celery
 import logging
 
-from app.audio_processing import loudnorm, VideoProcessor
-from app.files import send_audio, send_video
+from app.audio_processing import loudnorm, VideoProcessor, get_file_duration_seconds
+from app.replies import send_audio, send_video, send_message
 from app.models.job import Job
+from app.models.user import UserDAL, InsufficientBalanceError
 from app.settings import (
     REDIS_HOST,
     REDIS_PORT,
@@ -34,18 +35,37 @@ def process_audio(
     api_fpath: str,
     algorithm: str,
     kwargs,
-    duration,
     chat_id,
     msg_id,
     user_id,
     og_filename,
 ):
-    job_id = Job.create(user_id=user_id, frozen_amount=0)
     fpath = api_fpath.replace(API_WORKDIR, INPUT_DIR)
-    processed_fpath = loudnorm(fpath, OUTPUT_DIR, algorithm, kwargs)
-    send_audio(processed_fpath, chat_id, msg_id, og_filename, duration)
-    Job.mark_completed(job_id)
-    os.remove(fpath)
+    duration = get_file_duration_seconds(fpath)
+    job_id = Job.create(user_id=user_id, file_path=fpath, audio_length=duration)
+    success = False
+    try:
+        UserDAL.deduct_balance(user_id, duration)
+        processed_fpath = loudnorm(fpath, OUTPUT_DIR, algorithm, kwargs)
+        send_audio(processed_fpath, chat_id, msg_id, og_filename, duration)
+        success = True
+    except InsufficientBalanceError as e:
+        send_message(
+            chat_id,
+            "Insufficient balance to process the audio.\n"
+            f"Your balance: {e.balance} seconds\n"
+            f"Audio length: {e.required} seconds",
+        )
+    except Exception as e:
+        logger.error(f"Error processing audio: {e}", exc_info=True)
+        UserDAL.top_up_balance(user_id, duration)
+        send_message(
+            chat_id, "Couldn't process file due to internal error. Please contact the developer."
+        )
+        Job.mark_completed(job_id, False)
+    finally:
+        os.remove(fpath)
+        Job.mark_completed(job_id, success)
 
 
 @celery_app.task

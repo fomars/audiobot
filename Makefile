@@ -10,7 +10,7 @@ build:
 	docker-compose build bot
 
 run:
-	docker-compose up -d --timeout 300
+	docker-compose up -d --timeout 10
 
 run_new_worker:
 	docker run -d --name new_worker --platform linux/x86_64 \
@@ -34,6 +34,9 @@ makemigrations: ## Create alembic migration
 
 migrate:  ## Apply latest alembic migrations
 	$(PYTHON) -m alembic upgrade head
+
+rollback:  ## Rollback last alembic migration
+	$(PYTHON) -m alembic downgrade -1
 
 deploy:
 	make build

@@ -1,7 +1,10 @@
+from typing import Union
+
 from sqlalchemy import Column, BigInteger, String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import insert
 
 from app.db import Base, utcnow, Session
+from app.settings import app_settings
 
 
 class User(Base):
@@ -18,7 +21,14 @@ class User(Base):
         DateTime, nullable=False, onupdate=utcnow(), server_default=utcnow(), index=True
     )
     balance_seconds = Column(BigInteger, nullable=False, default=0, server_default="0")
-    frozen_balance = Column(BigInteger, default=0)
+
+
+class InsufficientBalanceError(ValueError):
+    def __init__(self, user_id: int, balance: int, required: int):
+        self.user_id = user_id
+        self.balance = balance
+        self.required = required
+        super().__init__(f"User {user_id} has insufficient balance: {balance} < {required}")
 
 
 class UserDAL:
@@ -36,6 +46,7 @@ class UserDAL:
                     first_name=first_name,
                     is_bot=is_bot,
                     last_message_at=utcnow(),
+                    balance_seconds=app_settings.free_balance_seconds,
                 )
                 .on_conflict_do_update(
                     index_elements=["tg_id"],
@@ -51,3 +62,20 @@ class UserDAL:
             result_row = session.execute(query).fetchone()
             session.commit()
             return result_row
+
+    @staticmethod
+    def deduct_balance(user_id: int, amount: int) -> Union[bool, int]:
+        with Session() as session:
+            user = session.query(User).filter(User.id == user_id).one()
+            if user.balance_seconds < amount:
+                raise InsufficientBalanceError(user_id, user.balance_seconds, amount)
+            user.balance_seconds -= amount
+            session.commit()
+            return True
+
+    @staticmethod
+    def top_up_balance(user_id: int, amount: int) -> None:
+        with Session() as session:
+            user = session.query(User).filter(User.id == user_id).one()
+            user.balance_seconds += amount
+            session.commit()

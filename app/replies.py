@@ -4,6 +4,14 @@ from app import settings
 from app.bot import bot
 
 
+def send_message(chat_id: int, text: str, reply_to_message_id: int = None):
+    bot.send_message(
+        chat_id,
+        text,
+        reply_to_message_id=reply_to_message_id,
+    )
+
+
 def send_audio(fpath, chat_id, msg_id, filename, duration):
     if settings.LOCAL_API:
         file_uri = (

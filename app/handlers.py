@@ -275,15 +275,10 @@ def handle_audio(message):
         message,
         "Audio is being processed.",
     )
-    try:
-        duration = audio.duration
-    except AttributeError:
-        duration = None
     process_audio.delay(
         file_info.file_path,
         algorithm,
         kwargs,
-        duration,
         message.chat.id,
         message.id,
         message.user_id,
