@@ -7,7 +7,7 @@ from app.settings import app_settings
 from app.models.user import UserDAL
 
 
-class AccountingMiddleware(BaseMiddleware):
+class PrepareUserData(BaseMiddleware):
     def __init__(self):
         super().__init__()
         self.update_types = ["message"]
@@ -20,6 +20,7 @@ class AccountingMiddleware(BaseMiddleware):
             message.from_user.username,
         )
         message.user_id = user.id
+        message.user = user
         if message.document and re.fullmatch(
             app_settings.audio_mime_types, message.document.mime_type
         ):

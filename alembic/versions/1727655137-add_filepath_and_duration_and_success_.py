@@ -14,7 +14,7 @@ revision = '1263663c9434'
 down_revision = '0b526ec5e1fe'
 branch_labels = None
 depends_on = None
-top_up_seconds = 60 * 60  # 30 minutes
+top_up_seconds = 60 * 30  # 30 minutes
 
 
 def upgrade() -> None:
@@ -34,8 +34,4 @@ def downgrade() -> None:
     op.drop_column('jobs', 'success')
     op.drop_column('jobs', 'file_path')
     op.add_column('users', sa.Column('frozen_balance', sa.BIGINT(), autoincrement=False, nullable=True))
-    # revert top up balance to all users
-    op.execute(
-        f"UPDATE users SET balance_seconds = GREATEST(0, balance_seconds - {top_up_seconds}) where balance_seconds >= 0"
-    )
     # ### end Alembic commands ###

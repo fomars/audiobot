@@ -23,6 +23,7 @@ from app.bot import bot
 from app.tasks import process_audio, process_video
 
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def reset_menu(chat_id, commands=None, start=True):
@@ -343,3 +344,23 @@ def handle_video(message):
 )
 def undefined(message):
     bot.reply_to(message, "Unsupported media type")
+
+
+@bot.message_handler(
+    commands=[MainCommands.balance_info.value]
+)
+def balance_info(message):
+    bot.reply_to(
+        message,
+        f"Your balance: {message.user.balance_seconds} seconds",
+    )
+
+
+@bot.message_handler(
+    commands=[MainCommands.balance_top_up.value]
+)
+def send_top_up_link(message):
+    bot.reply_to(
+        message,
+        "Top up your balance here: https://t.me/tribute/app?startapp=pbS6",
+    )

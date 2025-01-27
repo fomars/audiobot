@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Union
 
 from sqlalchemy import Column, BigInteger, String, Boolean, DateTime
@@ -37,7 +38,6 @@ class UserDAL:
         with Session() as session:
             user = User(tg_username=tg_username, first_name=first_name, is_bot=is_bot)
             user.tg_ig = tg_id
-
             query = (
                 insert(User)
                 .values(

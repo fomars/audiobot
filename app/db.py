@@ -22,4 +22,4 @@ def pg_utcnow(element, compiler, **kw):
     return "TIMEZONE('utc', CURRENT_TIMESTAMP)"
 
 
-Session = sessionmaker(db_engine)
+Session = sessionmaker(db_engine, expire_on_commit=False, autocommit=False, autoflush=False)

@@ -1,17 +1,10 @@
-import logging
-
 from telebot.storage import StateRedisStorage
-from telebot import TeleBot, apihelper, logger
+from telebot import TeleBot, apihelper
 from telebot.types import MenuButtonCommands, BotCommandScopeDefault
 
 from app.commands import main_commands, bot_command_help
-from app.middleware import AccountingMiddleware
+from app.middleware import PrepareUserData
 from app import settings
-
-if settings.DEBUG:
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.INFO)
 
 state_storage = StateRedisStorage(
     host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.STORAGE_DB
@@ -27,7 +20,7 @@ bot = TeleBot(
     num_threads=settings.app_settings.app_threads,
     use_class_middlewares=True,
 )
-bot.setup_middleware(AccountingMiddleware())
+bot.setup_middleware(PrepareUserData())
 
 bot.set_my_commands(
     main_commands + [bot_command_help],

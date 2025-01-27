@@ -14,20 +14,26 @@ class Job(Base):
     success = Column(Boolean, nullable=True)
 
     @staticmethod
-    def create(user_id: int, file_path: str, audio_length: int) -> int:
-        with Session() as session:
-            job = Job(
-                user_id=user_id,
-                audio_length_seconds=audio_length,
-                file_path=file_path,
-            )
-            session.add(job)
-            session.commit()
-            return job.id
+    def create(db_session: Session, user_id: int, file_path: str, audio_length: int) -> "Job":
+        job = Job(
+            user_id=user_id,
+            audio_length_seconds=audio_length,
+            file_path=file_path,
+        )
+        db_session.add(job)
+        db_session.commit()
+        db_session.refresh(job)
+        return job
 
-    @staticmethod
-    def mark_completed(id_: int, success: bool) -> None:
-        with Session() as session:
-            query = update(Job).where(Job.id == id_).values(completed_at=utcnow())
-            session.execute(query)
-            session.commit()
+    def mark_file_ready(self, db_session: Session, file_path: str) -> None:
+        query = update(Job).where(Job.id == self.id).values(file_path=file_path)
+        db_session.execute(query)
+        db_session.commit()
+        db_session.refresh(self)
+
+
+    def mark_finished(self, db_session: Session, success: bool) -> None:
+        query = update(Job).where(Job.id == self.id).values(success=success, completed_at=utcnow())
+        db_session.execute(query)
+        db_session.commit()
+        db_session.refresh(self)

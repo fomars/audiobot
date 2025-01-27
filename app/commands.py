@@ -6,6 +6,8 @@ class MainCommands(Enum):
     make_it_loud = "make_it_loud"
     enhance_speech = "enhance_speech"
     small_speakers = "small_speakers"
+    balance_info = "balance_info"
+    balance_top_up = "balance_top_up"
 
     def _missing_(cls, value: object):
         return cls.make_it_loud
@@ -35,5 +37,13 @@ main_commands = [
     BotCommand(
         MainCommands.small_speakers.value,
         "Optimise for portable speaker and increase loudness.",
+    ),
+    BotCommand(
+        MainCommands.balance_info.value,
+        "Check your balance",
+    ),
+    BotCommand(
+        MainCommands.balance_top_up.value,
+        "Top up your balance",
     ),
 ]

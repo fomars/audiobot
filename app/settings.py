@@ -1,6 +1,8 @@
+import logging
 import os
 
 from pydantic_settings import BaseSettings
+from telebot import logger
 
 DEBUG = bool(os.getenv("DEBUG"))
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "app/output")
@@ -25,6 +27,12 @@ BACKEND_DB = 1
 STORAGE_DB = 2
 
 
+if DEBUG:
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.INFO)
+
+
 class AppSettings(BaseSettings):
     app_threads: int = 8
     audio_send_timeout: int = 60
@@ -42,7 +50,7 @@ class AppSettings(BaseSettings):
     video_mime_types: str = r"^video/[a-zA-Z0-9-_]+$"
     lufs_rtfm_link: str = "https://en.wikipedia.org/wiki/Audio_normalization#Loudness_normalization"
     cutoff_rtfm_link: str = "https://en.wikipedia.org/wiki/Audio_filter"
-    free_balance_seconds: int = 60 * 60
+    free_balance_seconds: int = 60 * 20
 
 
 class DBSettings(BaseSettings):

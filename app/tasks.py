@@ -7,6 +7,7 @@ import celery
 import logging
 
 from app.audio_processing import loudnorm, VideoProcessor, get_file_duration_seconds
+from app.db import Session
 from app.replies import send_audio, send_video, send_message
 from app.models.job import Job
 from app.models.user import UserDAL, InsufficientBalanceError
@@ -42,30 +43,34 @@ def process_audio(
 ):
     fpath = api_fpath.replace(API_WORKDIR, INPUT_DIR)
     duration = get_file_duration_seconds(fpath)
-    job_id = Job.create(user_id=user_id, file_path=fpath, audio_length=duration)
-    success = False
-    try:
-        UserDAL.deduct_balance(user_id, duration)
-        processed_fpath = loudnorm(fpath, OUTPUT_DIR, algorithm, kwargs)
-        send_audio(processed_fpath, chat_id, msg_id, og_filename, duration)
-        success = True
-    except InsufficientBalanceError as e:
-        send_message(
-            chat_id,
-            "Insufficient balance to process the audio.\n"
-            f"Your balance: {e.balance} seconds\n"
-            f"Audio length: {e.required} seconds",
-        )
-    except Exception as e:
-        logger.error(f"Error processing audio: {e}", exc_info=True)
-        UserDAL.top_up_balance(user_id, duration)
-        send_message(
-            chat_id, "Couldn't process file due to internal error. Please contact the developer."
-        )
-        Job.mark_completed(job_id, False)
-    finally:
-        os.remove(fpath)
-        Job.mark_completed(job_id, success)
+    with Session() as session:
+        job = Job.create(session, user_id=user_id, file_path=fpath, audio_length=duration)
+        success = False
+        try:
+            UserDAL.deduct_balance(user_id, duration)
+            processed_fpath = loudnorm(fpath, OUTPUT_DIR, algorithm, kwargs)
+            job.mark_file_ready(session, processed_fpath)
+            send_audio(processed_fpath, chat_id, msg_id, og_filename, duration)
+            success = True
+            os.remove(fpath)
+        except InsufficientBalanceError as e:
+            send_message(
+                chat_id,
+                "Insufficient balance to process the audio.\n"
+                f"Your balance: {e.balance} seconds\n"
+                f"Audio length: {e.required} seconds\n"
+                f"Please top up your balance or contact the support.",
+            )
+        except Exception as e:
+            logger.error(f"Error processing audio: {e}", exc_info=True)
+            UserDAL.top_up_balance(user_id, duration)  # refund the user
+            send_message(
+                chat_id, "Couldn't process file due to internal error. Please contact the support."
+            )
+            job.mark_finished(session, False)
+        finally:
+            job.mark_finished(session, success)
+            session.commit()
 
 
 @celery_app.task
